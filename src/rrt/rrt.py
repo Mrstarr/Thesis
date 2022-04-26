@@ -31,4 +31,5 @@ class RRT():
         Sampling a New Point and Search its neighbor :)
         '''
         New = self.space.sample()
+        
         return New, Nearest
