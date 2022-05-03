@@ -11,9 +11,9 @@ class GaussianProcess2D():
         # kernel = RationalQuadratic()
         self.GPM = gaussian_process.GaussianProcessRegressor(kernel=kernel)
 
-    def InfoMetric(self, X):
-        _, std = self.GPM.predict(X, return_std = True)
-        return std
+    def predict(self, X):
+        mean, std = self.GPM.predict(X, return_std = True)
+        return mean, std
     
     def update(self, X1, y1):
         if X1.ndim == 1:

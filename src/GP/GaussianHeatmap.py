@@ -36,9 +36,7 @@ class GaussianHeatmap:
           y, std = GPR.predict(pts.reshape(-1,2), return_std = True)
           MeanGrayscaleImage[i,j] = y
           VarGrayscaleImage[i,j] = std
-          
-      
-      
+            
       print("Total time cost:", time.time()-StartTime)
       MeanGrayscaleImage = cv2.normalize(MeanGrayscaleImage, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8UC1)
       self.GaussianHeatmap = cv2.applyColorMap(MeanGrayscaleImage, cv2.COLORMAP_JET)

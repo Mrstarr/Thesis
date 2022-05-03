@@ -15,9 +15,10 @@ class MyopicAgent():
             self.pos = InitPos
         
         self.GP = GaussianProcess2D()
-        self.step = 100
-        self.u = 0.5 * np.array([[1,0],[1,-1],[-1,-1],[-1,1],[-1,0],[0,1],[0,-1], [1,1]])
-        
+        self.step = 40
+        self.u = 0.5 * np.array([[1,1],[1,-1],[-1,-1],[-1,1],[1,0],[-1,0],[0,1],[0,-1]])
+        self.Xtrajectory = [self.pos[0]]
+        self.Ytrajectory = [self.pos[1]]
 
     def MotionModel(self, u):
         NewPos = self.pos + u
@@ -26,46 +27,31 @@ class MyopicAgent():
     def DecisionMaking(self):
         pass 
 
-    def explore(self, field):
+    def explore(self, map, plot=False):
         '''
         Within total step of exploration, for each possible motion, compare information gain and perform decision making
         '''
-        X = []
-        Z = []
         for i in range(self.step):
             MaxGain = -1000
-
-            X.append(self.pos)
-            z = field.GT.getMeasure(self.pos)
-            Z.append(z)
-            self.GP.GPM.fit(X, Z)
-
             for unit in self.u:
                 '''
                 Transverse all likely setpoints
                 '''
                 NewPos = self.MotionModel(unit)
-                if self.BoundaryCheck(field, NewPos) is False:
-                    continue
                 Gain = self.InfoGain(NewPos)
                 if Gain > MaxGain:
                     BestPos = NewPos
                     MaxGain = Gain
-            
             self.pos = BestPos
-        
-        # DO IT ONE MORE TIME 
-        X.append(self.pos)
-        z = field.GT.getMeasure(self.pos)
-        Z.append(z)
-        self.GP.GPM.fit(X, Z)
-        '''
-        Visualize trajectory every step 
-        '''
-        # if plot:
-        #     self.PlotAnimation()
-        #print(self.X)
-        return X
+            self.InfoGathering(map, BestPos)
+            self.Xtrajectory.append(self.pos[0])
+            self.Ytrajectory.append(self.pos[1])
+            '''
+            Visualize trajectory every step 
+            '''
+        if plot:
+            self.PlotAnimation()
+        return
     
 
     def PlotAnimation(self):
@@ -92,8 +78,9 @@ class MyopicAgent():
         '''
         Gain for a Single Movement: Moving into high std place
         '''
-        mu, Sigma = self.GP.predict([NewPos])   #standard variance
-        Gain = self.DifferentialEntropy(Sigma)       
+        mu, Sigma = self.GP.InfoMetric([NewPos])   #standard variance
+        Gain = self.DifferentialEntropy(Sigma) + 0.8 * mu
+        #print(mu, Gain)
         return Gain
     
     def DifferentialEntropy(self, Sigma):
@@ -106,9 +93,3 @@ class MyopicAgent():
         measurement = field.GT.getMeasure(pos)
         self.GP.update(pos, measurement)
         return measurement
-
-    def BoundaryCheck(self, field, pos):
-        if 0 <= pos[0] <= field.FieldSize[0] and 0 <= pos[1] <= field.FieldSize[1]:
-            return True
-        else:
-            return False
