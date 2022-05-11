@@ -2,6 +2,7 @@ from json.encoder import py_encode_basestring
 import numpy as np
 import math
 import matplotlib.pyplot as plt
+from sklearn.preprocessing import normalize
 from matplotlib.animation import FuncAnimation
 
 class MyopicAgent():
@@ -14,20 +15,23 @@ class MyopicAgent():
             self.pos = InitPos
         
         self.GP = GP
-        self.step = 100
-        self.u = 0.5 * np.array([[1,0],[1,-1],[-1,-1],[-1,1],[-1,0],[0,1],[0,-1], [1,1]])
+        self.inc = 0.5   # Increment for a single movement 
+        self.u = self.inc * normalize(np.array([[1,0],[1,-1],[-1,-1],[-1,1],[-1,0],[0,1],[0,-1], [1,1]]), axis=1)
         #self.u = 0.5 * np.array([[1,0],[-1,0],[0,1],[0,-1]])
-        #self.u = 0.5 * np.array([[1,-1],[-1,-1],[-1,1],[1,1]])
         self.dtheta = [-math.pi/4, 0, math.pi/4]
 
-    def MotionModel(self, u):
-        NewPos = self.pos + u
+    def Move(self, u):
+        self.pos = self.pos + u
+        return self.pos
+    
+    def MoveMotion(self, pose, u):
+        NewPos = pose + u
         return NewPos
 
     def DecisionMaking(self):
         pass 
     
-    def explore(self, field):
+    def explore(self, field, step):
         def is_arr_in_list(arr, list_arrays):
             return next((True for elem in list_arrays if elem is arr), False)
     
@@ -38,22 +42,26 @@ class MyopicAgent():
         Z = []  # training set Z --- measured physcial property
         P = []  # robot trajectory
        
-        for i in range(self.step):
+        for i in range(step):
             MaxGain = -1000
 
             P.append(self.pos)
-            if not is_arr_in_list(self.pos, X):
-                X.append(self.pos)
-                z = field.GT.getMeasure(self.pos)
-                Z.append(z)
-                self.GP.GPM.fit(X, Z)
-               
+            # if not is_arr_in_list(self.pos, X):
+            #     X.append(self.pos)
+            #     z = field.GT.getMeasure(self.pos)
+            #     Z.append(z)
+            #     self.GP.GPM.fit(X, Z)
+            X.append(self.pos)
+            z = field.GT.getMeasure(self.pos)
+            Z.append(z)
+            self.GP.fit(X, Z)
+
             for move in self.u:
                 '''
                 Transverse all likely setpoints
                 '''
                 # One step Horizon
-                NewPos = self.MotionModel(move)
+                NewPos = self.MoveMotion(self.pos, move)
 
                 if self.BoundaryCheck(field, NewPos) is False:
                     continue
@@ -63,19 +71,20 @@ class MyopicAgent():
                     MaxGain = Gain
                     
             
-            self.pos = self.MotionModel(BestMove)
-        
+            self.Move(BestMove)
+            
         # DO IT ONE MORE TIME 
         P.append(self.pos)
         X.append(self.pos)
         z = field.GT.getMeasure(self.pos)
+
         Z.append(z)
-        self.GP.GPM.fit(X, Z)
+        self.GP.fit(X, Z)
         
         return P
     
 
-    def MultiHorizonExplore(self, field, horizon=4):
+    def MultiHorizonExplore(self, field, step, horizon):
         def is_arr_in_list(arr, list_arrays):
             return next((True for elem in list_arrays if elem is arr), False)
 
@@ -85,50 +94,40 @@ class MyopicAgent():
         X = []
         Z = []
         P = [] 
-        for i in range(self.step):
+        for i in range(step):
             MaxGain = -1000
-
-            
-            P.append(self.pos)
-            if not is_arr_in_list(self.pos, X):
-                X.append(self.pos)
-                z = field.GT.getMeasure(self.pos)
-                Z.append(z)
-                self.GP.GPM.fit(X, Z)
+            X.append(self.pos)
+            z = field.GT.getMeasure(self.pos)
+            Z.append(z)
+            self.GP.fit(X, Z)
 
             for move in self.u:
                 '''
                 Transverse all likely setpoints
                 '''
                 # One step Horizon
-                # NewPos = self.MotionModel(move)
+                NewPos = self.MoveMotion(self.pos, move)
+                if self.BoundaryCheck(field, NewPos) is False:
+                    continue
                 theta = math.atan2(move[1], move[0])
                 
                 for dtheta1 in self.dtheta:
                     theta = theta + dtheta1
                     dx = round(math.cos(theta), 2)
                     dy = round(math.sin(theta), 2)
-                    #move1 = np.array([dx, dy])
-                    move1 = np.array([dx, dy])/max(abs(dx), abs(dy))
-                    #print(move1)
-                    
-                    # for dtheta2 in self.dtheta:
-                    #     theta = theta + dtheta2
-                    #     move2 = np.array([math.cos(theta), math.sin(theta)])/max(abs(math.cos(theta)),abs(math.sin(theta)))
-                    #     for dtheta3 in self.dtheta:
-                    #         theta = theta + dtheta3
-                    #         move3 = np.array([math.cos(theta), math.sin(theta)])/max(abs(math.cos(theta)),abs(math.sin(theta)))
+                    move1 = (horizon-1) * self.inc * np.array([dx, dy])
 
-                    NewPos = self.MotionModel(move+move1)
+
+                    Pos2 = self.MoveMotion(NewPos, move1)
                     # Multiple Horizon
-                    if self.BoundaryCheck(field, NewPos) is False:
-                        continue
+                    if self.BoundaryCheck(field, Pos2):
+                        NewPos = Pos2
                     Gain = self.InfoGain(NewPos)
                     if Gain > MaxGain:
                         BestMove = move
                         MaxGain = Gain
 
-            self.pos = self.MotionModel(BestMove)
+            self.Move(BestMove)
             
         
         # DO IT ONE MORE TIME 
@@ -173,17 +172,14 @@ class MyopicAgent():
         mu, Sigma = self.GP.predict([NewPos])   #standard variance
         Gain = self.DifferentialEntropy(Sigma)       
         return Gain
-    
+
+
     def DifferentialEntropy(self, Sigma):
         if Sigma.shape[0] == 1:
             return 0.5 * math.log10(2*math.pi*math.e*Sigma)
         elif Sigma.shape[0] > 1:
             return 0.5 * math.log10(2*math.pi*math.e*np.linalg.det(Sigma))
 
-    def InfoGathering(self, field, pos):
-        measurement = field.GT.getMeasure(pos)
-        self.GP.update(pos, measurement)
-        return measurement
 
     def BoundaryCheck(self, field, pos):
         if 0 <= pos[0] <= field.FieldSize[0] and 0 <= pos[1] <= field.FieldSize[1]:

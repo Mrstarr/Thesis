@@ -3,13 +3,13 @@ from math import exp
 
 class GroundTruth():
 
-    def __init__(self) -> None:
-        self.center1 = (4,8)
-        self.center2 = (2,2)
-        self.center3 = (7,4)
-        sigma = 8
-        gaussian = lambda x: 1 * exp(-(1/sigma)*(x**2))
-        self.func = np.vectorize(gaussian)
+    def __init__(self, center1= (4,8),center2 = (2,2),center3 = (7,4)) -> None:
+        self.center1 = center1
+        self.center2 = center2
+        self.center3 = center3
+        sigma = 1.0
+        self.gaussian = lambda x: 1 * exp(-(1/2/(sigma**2))*(x**2))
+        self.func = np.vectorize(self.gaussian)
 
     def getMeasure(self, X):
         '''

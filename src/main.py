@@ -10,8 +10,8 @@ GP = GaussianProcess2D()
 FieldSize = 10
 EnvField = Field([FieldSize,FieldSize])
 Rob = MyopicAgent(InitPos = [0,0], GP=GP)
-#Path = Rob.explore(EnvField)
-Path = Rob.MultiHorizonExplore(EnvField, horizon=2)
+#Path = Rob.explore(EnvField, step=300)
+Path = Rob.MultiHorizonExplore(EnvField, step=300, horizon=2)
 
 # Visualization
 GridSize = FieldSize*2 + 1

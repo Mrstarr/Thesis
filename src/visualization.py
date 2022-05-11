@@ -20,6 +20,5 @@ def showplt(ax1, ax2, ax3, ax4, x, y, GroundTruth, GP, path):
     ax4.contourf(x, y, var.reshape(GridSize,GridSize), 15)
 
     
-
     #for a in CS.collections:
     #    a.set_edgecolor('face')
