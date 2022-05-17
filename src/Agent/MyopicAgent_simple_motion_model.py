@@ -1,38 +1,32 @@
-from cmath import sin
 from json.encoder import py_encode_basestring
 import numpy as np
 import math
 import matplotlib.pyplot as plt
-from numpy import polysub
 from sklearn.preprocessing import normalize
 from matplotlib.animation import FuncAnimation
 
-class MyopicAgent2():
+class MyopicAgent():
     def __init__(self, InitPos, GP) -> None:
         
         # Make sure input position is numpy array
         if type(InitPos) is not np.ndarray:
-            self.pose = np.array(InitPos)
+            self.pos = np.array(InitPos)
         else:
-            self.pose = InitPos
+            self.pos = InitPos
         
         self.GP = GP
-        self.v = 0.5   # Increment for a single movement 
-        self.w = [-math.pi/4, -math.pi/8, math.pi/4, math.pi/8]
-        self.dt = 1
+        self.inc = 0.5   # Increment for a single movement 
+        self.u = self.inc * normalize(np.array([[1,0],[1,-1],[-1,-1],[-1,1],[-1,0],[0,1],[0,-1], [1,1]]), axis=1)
+        #self.u = 0.5 * np.array([[1,0],[-1,0],[0,1],[0,-1]])
+        self.dtheta = [-math.pi/4, 0, math.pi/4]
 
     def Move(self, u):
-        NewPose = self.MoveMotion(self.pose, u)
-        self.pose = NewPose 
-        pass
+        self.pos = self.pos + u
+        return self.pos
     
     def MoveMotion(self, pose, u):
-        px = pose[0] - self.v/u*math.sin(pose[2]) + self.v/u*math.sin(pose[2]+u*self.dt)
-        py = pose[1] + self.v/u*math.cos(pose[2]) - self.v/u*math.cos(pose[2]+u*self.dt)
-        ptheta = pose[2] + u*self.dt
-        ptheta = ptheta % (2*math.pi)
-        
-        return np.array([px,py,ptheta])
+        NewPos = pose + u
+        return NewPos
 
     def DecisionMaking(self):
         pass 
@@ -51,27 +45,27 @@ class MyopicAgent2():
         for i in range(step):
             MaxGain = -1000
 
-            P.append(self.pose)
+            P.append(self.pos)
             # if not is_arr_in_list(self.pos, X):
             #     X.append(self.pos)
             #     z = field.GT.getMeasure(self.pos)
             #     Z.append(z)
             #     self.GP.GPM.fit(X, Z)
-            X.append(self.pose[0:2])
-            z = field.GT.getMeasure(self.pose[0:2])
+            X.append(self.pos)
+            z = field.GT.getMeasure(self.pos)
             Z.append(z)
             self.GP.fit(X, Z)
 
-            for move in self.w:
+            for move in self.u:
                 '''
                 Transverse all likely setpoints
                 '''
                 # One step Horizon
-                NewPos = self.MoveMotion(self.pose, move)
+                NewPos = self.MoveMotion(self.pos, move)
 
-                if self.BoundaryCheck(field, NewPos[0:2]) is False:
+                if self.BoundaryCheck(field, NewPos) is False:
                     continue
-                Gain = self.InfoGain(NewPos[0:2])
+                Gain = self.InfoGain(NewPos)
                 if Gain > MaxGain:
                     BestMove = move
                     MaxGain = Gain
@@ -80,14 +74,14 @@ class MyopicAgent2():
             self.Move(BestMove)
             
         # DO IT ONE MORE TIME 
-        P.append(self.pose)
-        X.append(self.pose[0:2])
-        z = field.GT.getMeasure(self.pose[0:2])
+        P.append(self.pos)
+        X.append(self.pos)
+        z = field.GT.getMeasure(self.pos)
 
         Z.append(z)
         self.GP.fit(X, Z)
         
-        return X
+        return P
     
 
     def MultiHorizonExplore(self, field, step, horizon):
@@ -102,28 +96,33 @@ class MyopicAgent2():
         P = [] 
         for i in range(step):
             MaxGain = -1000
-            X.append(self.pose[0:2])
-            z = field.GT.getMeasure(self.pose[0:2])
+            X.append(self.pos)
+            z = field.GT.getMeasure(self.pos)
             Z.append(z)
             self.GP.fit(X, Z)
 
-            for move in self.w:
+            for move in self.u:
                 '''
                 Transverse all likely setpoints
                 '''
                 # One step Horizon
-                NewPos = self.MoveMotion(self.pose, move)
-                if self.BoundaryCheck(field, NewPos[0:2]) is False:
+                NewPos = self.MoveMotion(self.pos, move)
+                if self.BoundaryCheck(field, NewPos) is False:
                     continue
+                theta = math.atan2(move[1], move[0])
                 
-                
-                for w2 in self.w:
+                for dtheta1 in self.dtheta:
+                    theta = theta + dtheta1
+                    dx = round(math.cos(theta), 2)
+                    dy = round(math.sin(theta), 2)
+                    move1 = (horizon-1) * self.inc * np.array([dx, dy])
 
-                    Pos2 = self.MoveMotion(NewPos, w2)
+
+                    Pos2 = self.MoveMotion(NewPos, move1)
                     # Multiple Horizon
-                    if self.BoundaryCheck(field, Pos2[0:2]):
+                    if self.BoundaryCheck(field, Pos2):
                         NewPos = Pos2
-                    Gain = self.InfoGain(NewPos[0:2])
+                    Gain = self.InfoGain(NewPos)
                     if Gain > MaxGain:
                         BestMove = move
                         MaxGain = Gain
@@ -132,9 +131,9 @@ class MyopicAgent2():
             
         
         # DO IT ONE MORE TIME 
-        P.append(self.pose)
-        X.append(self.pose[0:2])
-        z = field.GT.getMeasure(self.pose[0:2])
+        P.append(self.pos)
+        X.append(self.pos)
+        z = field.GT.getMeasure(self.pos)
         Z.append(z)
         self.GP.GPM.fit(X, Z)
         '''

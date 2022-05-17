@@ -2,6 +2,7 @@ from telnetlib import GA
 from xml.etree.ElementTree import TreeBuilder
 from env.Field import *
 from Agent.MyopicAgent import MyopicAgent
+from Agent.MyopicAgent2 import MyopicAgent2
 import matplotlib.pyplot as plt
 from GP.Gaussian2D import GaussianProcess2D
 from visualization import *
@@ -9,7 +10,8 @@ from visualization import *
 GP = GaussianProcess2D()
 FieldSize = 10
 EnvField = Field([FieldSize,FieldSize])
-Rob = MyopicAgent(InitPos = [0,0], GP=GP)
+#Rob = MyopicAgent(InitPos = [0,0], GP=GP)
+Rob = MyopicAgent2(InitPos = [0,0,0], GP=GP)
 #Path = Rob.explore(EnvField, step=300)
 Path = Rob.MultiHorizonExplore(EnvField, step=300, horizon=2)
 
