@@ -24,11 +24,11 @@ class MyopicAgent():
         self.dt = 1
 
     def Move(self, v, w):
-        NewPose = self.MoveMotion(self.pose, v, w)
-        self.pose = NewPose 
+        newpose = self.movemotion(self.pose, v, w)
+        self.pose = newpose 
         pass
     
-    def MoveMotion(self, pose, v, w):
+    def movemotion(self, pose, v, w):
         if w == 0:
             px = pose[0] + v*math.cos(pose[2])*self.dt
             py = pose[1] + v*math.sin(pose[2])*self.dt
@@ -51,8 +51,8 @@ class MyopicAgent():
         Z = []
         P = [] 
         for i in range(step):
-            MaxGain = -10000
-            BestMove = None
+            maxgain = -10000
+            bestmove = None
             P.append(self.pose)
             X.append(self.pose[0:2])
             z = field.GT.getMeasure(self.pose[0:2])
@@ -64,23 +64,28 @@ class MyopicAgent():
                     Transverse all likely setpoints
                     '''
                     # One step Horizon
-                    NewPos = self.MoveMotion(self.pose,v,w)
-                    if not BoundaryCheck(field,NewPos,barrier=0):
+                    newpos = self.movemotion(self.pose,v,w)
+                    if not boundarycheck(field,newpos,barrier=0):
                         continue
                     
                     if horizon > 1:
                         for w2 in self.w:
-                            Pos2 = self.MoveMotion(NewPos,v,w2)
+                            Pos2 = self.movemotion(newpos,v,w2)
                             # Multiple Horizon
-                            if BoundaryCheck(field,Pos2,barrier=0):
-                                NewPos = Pos2
-                    Gain = InfoGain(NewPos,field,v,w) + ControlPenalty(NewPos, v,w)+BoundaryPenalty(field, NewPos)
-                    if Gain > MaxGain:
-                        BestMove = [v, w]
-                        MaxGain = Gain
+                            if boundarycheck(field,Pos2,barrier=0):
+                                newpos = Pos2
+                            gain = sumgain(newpos, field, v, w)
+                            if gain > maxgain:
+                                bestmove = [v, w]
+                                maxgain = gain
+                    else:
+                        gain = sumgain(newpos, field, v, w)
+                        if gain > maxgain:
+                            bestmove = [v, w]
+                            maxgain = gain
 
-            if BestMove is not None:
-                self.Move(BestMove[0],BestMove[1])
+            if bestmove is not None:
+                self.Move(bestmove[0],bestmove[1])
             else:
                 print("For all active control, A collision happens")
                 print("Please check the collison avoidance ")
@@ -96,6 +101,51 @@ class MyopicAgent():
 
         return X
 
+    def one_step_explore(self, field, horizon, X, Z):
+        maxgain = -10000
+        bestmove = None
+        field.GP.fit(X, Z)
+        for v in self.v:
+            for w in self.w:
+                # One step Horizon
+                newpos = self.movemotion(self.pose,v,w)
+                if not boundarycheck(field,newpos,barrier=0):
+                    continue
+                   
+                if horizon > 1:
+                    for w2 in self.w:
+                        pos2 = self.movemotion(newpos,v,w2)
+                        # Multiple Horizon
+                        if boundarycheck(field,pos2,barrier=0):
+                            newpos = pos2
+                        gain = sumgain(newpos, field, v, w)
+                        if gain > maxgain:
+                            bestmove = [v, w]
+                            maxgain = gain
+                else:
+                    gain = sumgain(newpos, field, v, w)
+                    if gain > maxgain:
+                        bestmove = [v, w]
+                        maxgain = gain
+
+            if bestmove is not None:
+                self.Move(bestmove[0],bestmove[1])
+            else:
+                print("For all active control, A collision happens")
+                print("Please check the collison avoidance ")
+                break      
+        pos = self.pose[0:2]
+        z = field.GT.getMeasure(self.pose[0:2])
+
+        ##test
+        # X.append(pos)
+        # Z.append(z)
+        # field.GP.fit(X, Z)
+        # _, sigma = field.GP.predict([pos])
+        # print("!!!", sigma)
+        # print("???", differentialentropy(sigma))
+
+        return pos, z
 
 
 

@@ -1,0 +1,2 @@
+better collisionavoidance function
+fix bugs of overlapping trajectory the reason is foresee a unvisited point will not cause it to be updated!

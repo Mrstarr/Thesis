@@ -13,7 +13,6 @@ EnvField = Field([FieldSize,FieldSize], GP)
 Rob = MyopicAgent(InitPos = [0.5,0.5,0])
 
 
-#Path = Rob.Explore(EnvField, step=200, horizon=1)
 Path = Rob.Explore(EnvField, step=200, horizon=2)
 
 # Visualization
