@@ -15,13 +15,12 @@ with open('config/MAconfig.yaml', 'r') as file:
     MAfield = MAsetting['field']
     
 
-
 gp = GaussianProcess2D()
 FieldSize = MAfield['size']
 field = Field([FieldSize,FieldSize], gp)
 multirob = MultiAgent(MAgent)
 
-Path = multirob.MA_explore(field, step=10, horizon=2)
+Path = multirob.MA_explore(field, step=100, horizon=2)
 
 
 # Visualization

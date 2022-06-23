@@ -1,2 +1,7 @@
-better collisionavoidance function
+JUNE 21st
+better collisionavoidance function  ✅
 fix bugs of overlapping trajectory the reason is foresee a unvisited point will not cause it to be updated!
+Problem:
+During decision-making, if horizon increases, the robots will see further, repeatedly taking advantage of the same goal with high gain value, since the place that it sees has not been measured and maintains a large uncertainty. 
+
+JUNE 22nd

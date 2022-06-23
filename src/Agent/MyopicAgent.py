@@ -76,7 +76,8 @@ class MyopicAgent():
                                 newpos = Pos2
                             gain = sumgain(newpos, field, v, w)
                             if gain > maxgain:
-                                bestmove = [v, w]
+                                bestmove.append([v,w])
+                                bestmove.append([v, w2])
                                 maxgain = gain
                     else:
                         gain = sumgain(newpos, field, v, w)
@@ -84,8 +85,10 @@ class MyopicAgent():
                             bestmove = [v, w]
                             maxgain = gain
 
-            if bestmove is not None:
-                self.Move(bestmove[0],bestmove[1])
+            if bestmove:
+                for i in range(horizon):
+                    bestonemove = bestmove[i]
+                    self.Move(bestonemove[0],bestonemove[1])
             else:
                 print("For all active control, A collision happens")
                 print("Please check the collison avoidance ")
@@ -118,34 +121,40 @@ class MyopicAgent():
                         # Multiple Horizon
                         if boundarycheck(field,pos2,barrier=0):
                             newpos = pos2
-                        gain = sumgain(newpos, field, v, w)
+                        gain = infogain(newpos, field) + control_penalty(v, w) + boundary_penalty(newpos, field)
                         if gain > maxgain:
-                            bestmove = [v, w]
+                            bestmove = [v,w]
                             maxgain = gain
+                            fake_pos = newpos
                 else:
-                    gain = sumgain(newpos, field, v, w)
+                    gain = infogain(newpos, field) + control_penalty(v, w) + boundary_penalty(newpos, field)
+                    # print(w, newpos, "gain",gain,"col", boundary_penalty(newpos, field))
                     if gain > maxgain:
                         bestmove = [v, w]
                         maxgain = gain
+                        fake_pos = newpos
 
-            if bestmove is not None:
+
+            if bestmove:
                 self.Move(bestmove[0],bestmove[1])
             else:
                 print("For all active control, A collision happens")
-                print("Please check the collison avoidance ")
-                break      
+                print("Please check the collison avoidance ")   
         pos = self.pose[0:2]
         z = field.GT.getMeasure(self.pose[0:2])
-
+        fake_z = field.GT.getMeasure(fake_pos[0:2])
         ##test
+
+        # _, sigma = field.GP.predict([[pos[0]+0.5,pos[1]+0.5]])
+        # print("before update", sigma)
         # X.append(pos)
         # Z.append(z)
         # field.GP.fit(X, Z)
-        # _, sigma = field.GP.predict([pos])
-        # print("!!!", sigma)
-        # print("???", differentialentropy(sigma))
+        # _, sigma = field.GP.predict([[pos[0]+0.5,pos[1]+0.5]])
+        # print("after update", sigma)
+        # print("difentropy", differentialentropy(sigma))
 
-        return pos, z
+        return pos, z, fake_pos[0:2], fake_z
 
 
 

@@ -30,8 +30,14 @@ class MultiAgent():
 
         for s in range(step):
             for i, agent in enumerate(self.agentlist):
-                x, z = agent.one_step_explore(field, horizon, X, Z)
+                fake_X = X
+                fake_Z = Z
+                x, z, fake_x, fake_z = agent.one_step_explore(field, horizon, fake_X, fake_Z)
                 X.append(x)
                 Z.append(z)
+                fake_X.append(x)
+                fake_Z.append(z)
+                fake_X.append(fake_x)
+                fake_Z.append(fake_z)     
                 P[i].append(x)
         return P
