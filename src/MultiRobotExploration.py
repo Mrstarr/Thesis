@@ -20,8 +20,8 @@ FieldSize = MAfield['size']
 field = Field([FieldSize,FieldSize], gp)
 multirob = MultiAgent(MAgent)
 
-Path = multirob.MA_explore(field, step=100, horizon=2)
-
+# Path = multirob.MA_explore_naive(field, step=10, horizon=2)
+Path = multirob.MA_explore_stackelberg(field, step=100, horizon=2)
 
 # Visualization
 GridSize = FieldSize*2 + 1

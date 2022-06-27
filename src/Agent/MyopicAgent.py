@@ -19,7 +19,7 @@ class MyopicAgent():
         else:
             self.pose = InitPos
         
-        self.v = [0.5]   # Increment for a single movement 
+        self.v = 0.5   # Increment for a single movement 
         self.w = [-math.pi/4, -math.pi/8, 0, math.pi/4, math.pi/8]
         self.dt = 1
 
@@ -58,32 +58,31 @@ class MyopicAgent():
             z = field.GT.getMeasure(self.pose[0:2])
             Z.append(z)
             field.GP.fit(X, Z)
-            for v in self.v:
-                for w in self.w:
-                    '''
-                    Transverse all likely setpoints
-                    '''
-                    # One step Horizon
-                    newpos = self.movemotion(self.pose,v,w)
-                    if not boundarycheck(field,newpos,barrier=0):
-                        continue
-                    
-                    if horizon > 1:
-                        for w2 in self.w:
-                            Pos2 = self.movemotion(newpos,v,w2)
-                            # Multiple Horizon
-                            if boundarycheck(field,Pos2,barrier=0):
-                                newpos = Pos2
-                            gain = sumgain(newpos, field, v, w)
-                            if gain > maxgain:
-                                bestmove.append([v,w])
-                                bestmove.append([v, w2])
-                                maxgain = gain
-                    else:
-                        gain = sumgain(newpos, field, v, w)
+            for w in self.w:
+                '''
+                Transverse all likely setpoints
+                '''
+                # One step Horizon
+                newpos = self.movemotion(self.pose,self.v,w)
+                if not boundarycheck(field,newpos,barrier=0):
+                    continue
+                
+                if horizon > 1:
+                    for w2 in self.w:
+                        Pos2 = self.movemotion(newpos,self.v,w2)
+                        # Multiple Horizon
+                        if boundarycheck(field,Pos2,barrier=0):
+                            newpos = Pos2
+                        gain = sumgain(newpos, field, self.v, w)
                         if gain > maxgain:
-                            bestmove = [v, w]
+                            bestmove.append([self.v,w])
+                            bestmove.append([self.v, w2])
                             maxgain = gain
+                else:
+                    gain = sumgain(newpos, field, self.v, w)
+                    if gain > maxgain:
+                        bestmove = [self.v, w]
+                        maxgain = gain
 
             if bestmove:
                 for i in range(horizon):
@@ -104,44 +103,48 @@ class MyopicAgent():
 
         return X
 
-    def one_step_explore(self, field, horizon, X, Z):
+
+    def one_step_gain(self, pos, field, v, w):
+        return infogain(pos, field) + control_penalty(v, w) + boundary_penalty(pos, field)
+        
+
+    def one_step_explore(self, field, horizon, X, Z, ifmove=True):
         maxgain = -10000
         bestmove = None
         field.GP.fit(X, Z)
-        for v in self.v:
-            for w in self.w:
-                # One step Horizon
-                newpos = self.movemotion(self.pose,v,w)
-                if not boundarycheck(field,newpos,barrier=0):
-                    continue
-                   
-                if horizon > 1:
-                    for w2 in self.w:
-                        pos2 = self.movemotion(newpos,v,w2)
-                        # Multiple Horizon
-                        if boundarycheck(field,pos2,barrier=0):
-                            newpos = pos2
-                        gain = infogain(newpos, field) + control_penalty(v, w) + boundary_penalty(newpos, field)
-                        if gain > maxgain:
-                            bestmove = [v,w]
-                            maxgain = gain
-                            fake_pos = newpos
-                else:
-                    gain = infogain(newpos, field) + control_penalty(v, w) + boundary_penalty(newpos, field)
-                    # print(w, newpos, "gain",gain,"col", boundary_penalty(newpos, field))
+        for w in self.w:
+            # One step Horizon
+            newpos = self.movemotion(self.pose,self.v,w)
+            if not boundarycheck(field,newpos,barrier=0):
+                continue
+                
+            if horizon > 1:
+                for w2 in self.w:
+                    pos2 = self.movemotion(newpos,self.v,w2)
+                    # Multiple Horizon
+                    if boundarycheck(field,pos2,barrier=0):
+                        newpos = pos2
+                    gain = infogain(newpos, field) + control_penalty(self.v, w) + boundary_penalty(newpos, field)
                     if gain > maxgain:
-                        bestmove = [v, w]
+                        bestmove = [self.v,w]
                         maxgain = gain
                         fake_pos = newpos
+            else:
+                gain = infogain(newpos, field) + control_penalty(self.v, w) + boundary_penalty(newpos, field)
+                # print(w, newpos, "gain",gain,"col", boundary_penalty(newpos, field))
+                if gain > maxgain:
+                    bestmove = [self.v, w]
+                    maxgain = gain
+                    fake_pos = newpos
 
-
+        if ifmove:
             if bestmove:
                 self.Move(bestmove[0],bestmove[1])
             else:
                 print("For all active control, A collision happens")
                 print("Please check the collison avoidance ")   
-        pos = self.pose[0:2]
-        z = field.GT.getMeasure(self.pose[0:2])
+        pose = self.movemotion(self.pose, bestmove[0],bestmove[1])
+        z = field.GT.getMeasure(pose[0:2])
         fake_z = field.GT.getMeasure(fake_pos[0:2])
         ##test
 
@@ -153,8 +156,11 @@ class MyopicAgent():
         # _, sigma = field.GP.predict([[pos[0]+0.5,pos[1]+0.5]])
         # print("after update", sigma)
         # print("difentropy", differentialentropy(sigma))
-
-        return pos, z, fake_pos[0:2], fake_z
+        
+        '''
+        pos and z are movement only by 1 step; fake_pos and fake_z are movements by horizon steps
+        '''
+        return pose, z, fake_pos[0:2], fake_z, gain
 
 
 

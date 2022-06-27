@@ -7,6 +7,10 @@ agent:
         index: 1
         name: Philipp
         pos: [0,0,0]
+    # robot3:
+    #     index: 2
+    #     name: Eolldi
+    #     pos: [0,0,0]
 
 field:
     size: 10
