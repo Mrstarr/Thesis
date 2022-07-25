@@ -7,13 +7,13 @@ import matplotlib.pyplot as plt
 from GP.Gaussian2D import GaussianProcess2D
 from visualization import *
 
-GP = GaussianProcess2D()
+GP = GaussianProcess2D(alpha=1e-2)
 FieldSize = 10
 EnvField = Field([FieldSize,FieldSize], GP)
 Rob = MyopicAgent(InitPos = [0.5,0.5,0])
 
 
-Path = Rob.Explore(EnvField, step=200, horizon=2)
+Path = Rob.Explore(EnvField, step=200, horizon=20)
 
 # Visualization
 GridSize = FieldSize*2 + 1

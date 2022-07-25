@@ -22,25 +22,26 @@ def showplt2(ax1, ax2, ax3, x, y, GPM):
     ax3.contourf(x, y, var.reshape(GridSize,GridSize), 15)
 
 def func(X):
-    center1 = (9,16)
-    center2 = (4,4)
-    center3 = (15,8)
-    gaussian = lambda x: exp(-(1/2)*(x**2))
-    gaussian = np.vectorize(gaussian)
-    Xd = np.amin([np.linalg.norm(X - center1, axis=1),
-                   np.linalg.norm(X - center2, axis=1),
-                   np.linalg.norm(X - center3, axis=1)],axis = 0)
-    y = gaussian(Xd)
+    center1 = (4,8)
+    center2 = (2,2)
+    center3 = (7,4)
+    # gaussian = lambda x: exp(-(1/2)*(x**2))
+    # gaussian = np.vectorize(gaussian)
+    # Xd = np.amin([np.linalg.norm(X - center1, axis=1),
+    #                np.linalg.norm(X - center2, axis=1),
+    #                np.linalg.norm(X - center3, axis=1)],axis = 0)
+    # y = gaussian(Xd)
+    y =  np.exp(-(1/2)*(np.linalg.norm(X - center1, axis=1)**2)) + np.exp(-(1/2)*(np.linalg.norm(X - center2, axis=1)**2)) + np.exp(-(1/2)*(np.linalg.norm(X - center3, axis=1)**2))             
     return y
 
 
-border = 20 
+border = 10 
 # Full samplings
 X,Y = np.mgrid[0:border, 0:border]
 #X1 = np.hstack((X.reshape(border**2, -1), Y.reshape(border**2, -1)))
 np.random.seed(20)
-X1 = np.random.rand(150,2) *border
-X2 = np.random.rand(20,2) * 0.5*border
+X1 = np.random.rand(50,2) *border
+X2 = np.random.rand(20,2) * 0.5 * border
 y1 = func(X1)
 y2 = func(X2)
 
@@ -52,10 +53,10 @@ GPR = gaussian_process.GaussianProcessRegressor(kernel=kernel)
 
 #X2 = np.random.rand(40,2) * border
 #y2_true = func(X2)
-for i in range(X1.shape[0]-120, X1.shape[0],1):
-   GPR.fit(X1[0:i+1,:],y1[0:i+1])
+# for i in range(X1.shape[0]-120, X1.shape[0],1):
+#    GPR.fit(X1[0:i+1,:],y1[0:i+1])
 
-#GPR.fit(X1, y1)
+GPR.fit(X1, y1)
 #probe = [[5,5],[5,10],[5,15],[10,5],[10,10],[10,15],[15,5],[15,10],[15,15]]
 #_, cov = GPR.predict(probe, return_cov = True)
 FieldSize = border

@@ -5,8 +5,12 @@ def infogain(pose, field):
     '''
     Gain for a Single Movement: Moving into high std place
     '''
-
-    _, sigma = field.GP.predict([pose[0:2]])   #standard variance
+    if type(pose).__module__ is not 'numpy':
+        pose = np.array(pose)
+    if pose.ndim == 1:
+        _, sigma = field.GP.predict([pose[0:2]])   #standard variance
+    else:
+        _, sigma = field.GP.predict(pose[:,0:2], return_cov = True)
     Gain = differentialentropy(sigma)
     return Gain
 
@@ -16,13 +20,13 @@ def control_penalty(v, w):
 
 def boundary_penalty(pose, field):
     if math.cos(pose[2]) != 0:
-        dis_rw = (field.FieldSize[0] - pose[0]) / math.cos(pose[2])  # distance to rightwall
+        dis_rw = (field.size[0] - pose[0]) / math.cos(pose[2])  # distance to rightwall
         dis_lw = -pose[0] / math.cos(pose[2])    # distance to leftwall
     else: 
         dis_rw = dis_lw = 100
     
     if math.sin(pose[2])!= 0:
-        dis_uw = (field.FieldSize[0] - pose[1])/ math.sin(pose[2])
+        dis_uw = (field.size[0] - pose[1])/ math.sin(pose[2])
         dis_dw = -pose[1]/ math.sin(pose[2])
     else:
         dis_uw = dis_dw = 100
@@ -36,7 +40,7 @@ def boundary_penalty(pose, field):
         dis_dw = 100
     mindis = min(dis_rw, dis_lw, dis_uw, dis_dw)
     
-    if mindis < 2:
+    if mindis < 0.5:
         boundpenalty = - 2 * math.exp(-mindis * 2)
     else:
         boundpenalty = 0 
@@ -54,7 +58,7 @@ def mutualinformation(pose, field):
     '''
 
 def boundarycheck(field, pose, barrier):
-    if barrier < pose[0] < field.FieldSize[0]-barrier and barrier < pose[1] < field.FieldSize[1]-barrier:
+    if barrier < pose[0] < field.size[0]-barrier and barrier < pose[1] < field.size[1]-barrier:
         return True
     else:
         return False

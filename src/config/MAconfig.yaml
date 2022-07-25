@@ -9,7 +9,7 @@ agent:
         pos: [0,0,0]
     # robot3:
     #     index: 2
-    #     name: Eolldi
+    #     name: Ellidi
     #     pos: [0,0,0]
 
 field:

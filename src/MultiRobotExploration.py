@@ -1,3 +1,4 @@
+from logging import raiseExceptions
 from telnetlib import GA
 from xml.etree.ElementTree import TreeBuilder
 from env.Field import *
@@ -7,6 +8,7 @@ import matplotlib.pyplot as plt
 from GP.Gaussian2D import GaussianProcess2D
 from visualization import *
 
+import argparse
 import yaml 
 
 with open('config/MAconfig.yaml', 'r') as file:
@@ -15,13 +17,25 @@ with open('config/MAconfig.yaml', 'r') as file:
     MAfield = MAsetting['field']
     
 
-gp = GaussianProcess2D()
+parser = argparse.ArgumentParser(description="Coordination_type")
+parser.add_argument("-m", "--mode", type=str, required=True, help="Coordination_mode: no, stbg")
+parser.add_argument("-s", "--step", type=int, default=150, required=False, help="Steps of explore")
+args = parser.parse_args()
+
+
+gp = GaussianProcess2D(alpha=1e-2)
 FieldSize = MAfield['size']
 field = Field([FieldSize,FieldSize], gp)
 multirob = MultiAgent(MAgent)
 
-# Path = multirob.MA_explore_naive(field, step=10, horizon=2)
-Path = multirob.MA_explore_stackelberg(field, step=100, horizon=2)
+
+if args.mode == "no":
+    Path = multirob.MA_explore_naive(field, step=args.step, horizon=3)
+elif args.mode == "stbg":
+    Path = multirob.MA_explore_stackelberg(field, step=args.step, horizon=3)
+else:
+    raise RuntimeError('no such coordination method')
+
 
 # Visualization
 GridSize = FieldSize*2 + 1
