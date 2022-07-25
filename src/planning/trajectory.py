@@ -1,5 +1,6 @@
 import math
 import numpy as np
+from agent.heuristics import control_penalty
 
 
 def get_trajectory(pose, horizon, w, size):
@@ -9,19 +10,29 @@ def get_trajectory(pose, horizon, w, size):
     pos = agent.movemotion
     """
     trajectory = []
+    trajectory_pe = [] 
     v = 0.5
     init_pose = pose
     for i in range(len(w)):
         next = motion(init_pose, v, w[i])
-        if not (0<next[0]<size[0] and 0<next[1]<size[1]):
+        if not (0<next[0]<size[0] and 0<next[1]<size[1]):  # check the validity of next movement
             continue
         npose = init_pose
         lst_len = len(trajectory)
         trajectory.append([])
+
+        control_pe = 0              # calculate control cost during iteration
         for j in range(horizon):
             npose = motion(npose, v, w[i])
+            if not (0<npose[0]<size[0] and 0<npose[1]<size[1]):
+                control_pe -= 5   # mid-way collision intrigue penalty
+                break
             trajectory[lst_len].append(npose)
-    return trajectory
+
+        control_pe += control_penalty(v=1, w=w[i])        
+        trajectory_pe.append(control_pe)
+    
+    return trajectory, trajectory_pe
 
 
 def motion(pose, v, w):

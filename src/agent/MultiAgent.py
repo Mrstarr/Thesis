@@ -1,8 +1,8 @@
 from matplotlib.style import available
-from Agent.MyopicAgent import MyopicAgent
-from Agent.heuristics import *
+from agent.MyopicAgent import MyopicAgent
+from agent.heuristics import *
 from planning.trajectory import * 
-from Agent.heuristics import *
+from agent.heuristics import *
 
 class MultiAgent():
 
@@ -40,8 +40,10 @@ class MultiAgent():
             max_fl_gain = -1000
             ld = self.agentlist[0]  # leader
             fl = self.agentlist[1]  # follower
-            ld_tr_list = get_trajectory(ld.pose, horizon, ld.w, field.size)
-            fl_tr_list = get_trajectory(fl.pose, horizon, fl.w, field.size)
+
+            # retrieve trajectory and trajectoy penalty
+            ld_tr_list, ld_tr_pe = get_trajectory(ld.pose, horizon, ld.w, field.size)
+            fl_tr_list, fl_tr_pe = get_trajectory(fl.pose, horizon, fl.w, field.size)
             if not ld_tr_list:
                 ld.pose[2] = ld.pose[2] + math.pi
                 ld_tr_list = get_trajectory(ld.pose, horizon, ld.w, field.size)
@@ -49,8 +51,8 @@ class MultiAgent():
                 fl.pose[2] = fl.pose[2] + math.pi
                 fl_tr_list = get_trajectory(fl.pose, horizon, fl.w, field.size)
             
-            for ld_tr in ld_tr_list:
-                ld_gain = self.ld_gain_func(ld_tr, field)
+            for ld_tr, tr_pe in zip(ld_tr_list, ld_tr_pe):
+                ld_gain = self.ld_gain_func(ld_tr, field) + tr_pe
                 if ld_gain > max_ld_gain:
                     max_ld_gain = ld_gain
                     best_ld_tr = ld_tr
@@ -63,8 +65,8 @@ class MultiAgent():
             fake_Z += list(ld_z.reshape(-1,1))
             field.GP.fit(fake_X, fake_Z)
             
-            for fl_tr in fl_tr_list:
-                fl_gain = self.fl_gain_func(fl_tr, field)
+            for fl_tr, tr_pe in zip(fl_tr_list, fl_tr_pe):
+                fl_gain = self.fl_gain_func(fl_tr, field) + tr_pe
                 if fl_gain > max_fl_gain:
                     max_fl_gain = fl_gain
                     best_fl_tr = fl_tr
@@ -102,17 +104,17 @@ class MultiAgent():
             gl_max_gain = -1000             # global gain
 
             # Plan trajectory candidate
-            ld_tr_list = get_trajectory(ld.pose, horizon, ld.w, field.size)
-            fl_tr_list = get_trajectory(fl.pose, horizon, fl.w, field.size)
+            ld_tr_list, ld_tr_pe_list = get_trajectory(ld.pose, horizon, ld.w, field.size)
+            fl_tr_list, fl_tr_pe_list = get_trajectory(fl.pose, horizon, fl.w, field.size)
             if not ld_tr_list:
                 ld.pose[2] = ld.pose[2] + math.pi
-                ld_tr_list = get_trajectory(ld.pose, horizon, ld.w, field.size)
+                ld_tr_list, ld_tr_pe = get_trajectory(ld.pose, horizon, ld.w, field.size)
             if not fl_tr_list:
                 fl.pose[2] = fl.pose[2] + math.pi
-                fl_tr_list = get_trajectory(fl.pose, horizon, fl.w, field.size)
+                fl_tr_list, fl_tr_pe = get_trajectory(fl.pose, horizon, fl.w, field.size)
             # filter out invalid trajectory
 
-            for ld_tr in ld_tr_list:
+            for ld_tr, ld_tr_pe in zip(ld_tr_list, ld_tr_pe_list):
                 # Leader try to move
                 ld_tr_xy = [p[0:2] for p in ld_tr]
                 ld_z = field.GT.getMeasure(ld_tr_xy)
@@ -124,8 +126,8 @@ class MultiAgent():
                 # gain of follower
                 max_fl_gain = -1000
                 field.GP.fit(fake_X, fake_Z)
-                for fl_tr in fl_tr_list:
-                    fl_gain = self.fl_gain_func(fl_tr, field)
+                for fl_tr, fl_tr_pe in zip(fl_tr_list, fl_tr_pe_list):
+                    fl_gain = self.fl_gain_func(fl_tr, field) + fl_tr_pe
                     # How to deal with outlier here ???????
                     if fl_gain > max_fl_gain:
                         max_fl_gain = fl_gain
@@ -140,7 +142,7 @@ class MultiAgent():
                 fake_Z += list(fl_z.reshape(-1,1))
                 field.GP.fit(fake_X, fake_Z)
 
-                ld_gain = self.ld_gain_func(ld_tr, field)
+                ld_gain = self.ld_gain_func(ld_tr, field) + ld_tr_pe
                
 
                 # compare with maxium global gain

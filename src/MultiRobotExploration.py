@@ -2,10 +2,10 @@ from logging import raiseExceptions
 from telnetlib import GA
 from xml.etree.ElementTree import TreeBuilder
 from env.Field import *
-from Agent.MultiAgent import *
+from agent.MultiAgent import *
 
 import matplotlib.pyplot as plt
-from GP.Gaussian2D import GaussianProcess2D
+from gp.Gaussian2D import GaussianProcess2D
 from visualization import *
 
 import argparse

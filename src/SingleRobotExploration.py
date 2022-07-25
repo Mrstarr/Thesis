@@ -1,10 +1,10 @@
 from telnetlib import GA
 from xml.etree.ElementTree import TreeBuilder
 from env.Field import *
-from Agent.MyopicAgent import MyopicAgent
+from agent.MyopicAgent import MyopicAgent
 
 import matplotlib.pyplot as plt
-from GP.Gaussian2D import GaussianProcess2D
+from gp.Gaussian2D import GaussianProcess2D
 from visualization import *
 
 GP = GaussianProcess2D(alpha=1e-2)

@@ -15,7 +15,7 @@ def infogain(pose, field):
     return Gain
 
 def control_penalty(v, w):
-    controlpenalty = 0.2 * math.exp(-abs(w)/5)
+    controlpenalty = - 0.3 * (abs(w)**2)
     return controlpenalty
 
 def boundary_penalty(pose, field):
