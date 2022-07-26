@@ -3,6 +3,7 @@ from agent.MyopicAgent import MyopicAgent
 from agent.heuristics import *
 from planning.trajectory import * 
 from agent.heuristics import *
+from utils import generate_testing
 
 class MultiAgent():
 
@@ -34,7 +35,9 @@ class MultiAgent():
             z = field.GT.getMeasure(agent.pose[0:2])
             Z.append(z)
             P[i].append(agent.pose[0:2])
-
+        # List for rmse plots
+        timestamp = []
+        rmsestamp = []
         for s in range(step):
             max_ld_gain = -1000
             max_fl_gain = -1000
@@ -81,8 +84,15 @@ class MultiAgent():
             Z.append(field.GT.getMeasure(fl.pose[0:2]))
             P[0].append(ld.pose[0:2])
             P[1].append(fl.pose[0:2])
-        return P
+
+            # calculate RMSE to ground truth
+            if (s % 5) == 0:
+                timestamp.append(s)
+                rmsestamp.append(self.rmse(field))
+            
+        return P, timestamp, rmsestamp
     
+
     def MA_explore_stackelberg(self, field, step, horizon):
         X = []  # training input
         Z = []  # training output
@@ -100,6 +110,11 @@ class MultiAgent():
 
         ld = self.agentlist[0]  # leader
         fl = self.agentlist[1]  # follower
+        
+        # List for rmse plots
+        timestamp = []
+        rmsestamp = []
+
         for s in range(step):
             gl_max_gain = -1000             # global gain
 
@@ -164,10 +179,15 @@ class MultiAgent():
             P[0].append(ld.pose[0:2])
             P[1].append(fl.pose[0:2])
 
+            # calculate RMSE to ground truth
+            if (s % 5) == 0:
+                timestamp.append(s)
+                rmsestamp.append(self.rmse(field))
+
         """
         If you want to output anything
         """
-        return P
+        return P, timestamp, rmsestamp
     
     def fl_gain_func(self, fl_tr, field):
         information_gain = infogain(fl_tr, field)
@@ -178,3 +198,9 @@ class MultiAgent():
         information_gain = infogain(ld_tr, field)
         boundary_pe = boundary_penalty(ld_tr[0], field)
         return information_gain + boundary_pe
+    
+    def rmse(self, field):
+        X,_,_,_,_ = generate_testing(field)
+        Z = field.GT.getMeasure(X)
+        mu = field.GP.GPM.predict(X)
+        return np.sqrt(np.mean((mu-Z)**2))

@@ -2,15 +2,15 @@ agent:
     robot1:
         index: 0
         name: Frank
-        pos: [0,0,0]
+        pos: [0,1,0]
     robot2:
         index: 1
         name: Philipp
-        pos: [0,0,0]
+        pos: [0,14,0]
     # robot3:
     #     index: 2
     #     name: Ellidi
     #     pos: [0,0,0]
 
 field:
-    size: 10
+    size: 15

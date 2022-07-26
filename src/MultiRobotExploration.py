@@ -18,7 +18,7 @@ with open('config/MAconfig.yaml', 'r') as file:
     
 
 parser = argparse.ArgumentParser(description="Coordination_type")
-parser.add_argument("-m", "--mode", type=str, required=True, help="Coordination_mode: no, stbg")
+parser.add_argument("-m", "--mode", type=str, default="both", required=False, help="Coordination_mode: no, stbg")
 parser.add_argument("-s", "--step", type=int, default=150, required=False, help="Steps of explore")
 args = parser.parse_args()
 
@@ -30,22 +30,29 @@ multirob = MultiAgent(MAgent)
 
 
 if args.mode == "no":
-    Path = multirob.MA_explore_naive(field, step=args.step, horizon=3)
+    Path, t, rmse = multirob.MA_explore_naive(field, step=args.step, horizon=3)
 elif args.mode == "stbg":
-    Path = multirob.MA_explore_stackelberg(field, step=args.step, horizon=3)
+    Path, t, rmse = multirob.MA_explore_stackelberg(field, step=args.step, horizon=3)
+elif args.mode == "both":
+    Path, t, rmse = multirob.MA_explore_naive(field, step=args.step, horizon=3)
+    Path, _, rmse2 = multirob.MA_explore_stackelberg(field, step=args.step, horizon=3)
 else:
     raise RuntimeError('no such coordination method')
 
 
 # Visualization
-GridSize = FieldSize*2 + 1
-x = np.linspace(0, FieldSize, GridSize)
-y = np.linspace(0, FieldSize, GridSize)
+
 
 fig = plt.figure()
-ax1 = fig.add_subplot(221)
-ax2 = fig.add_subplot(222)
-ax3 = fig.add_subplot(223)
-ax4 = fig.add_subplot(224)
-plot = MA_showplt(ax1, ax2, ax3, ax4, x, y, field.GT, field.GP, Path)
+
+if args.mode == "both":
+    ax1 = fig.add_subplot(111)
+    plot = MA_rmse(ax1, t, rmse, rmse2)
+else:
+    ax1 = fig.add_subplot(321)
+    ax2 = fig.add_subplot(322)
+    ax3 = fig.add_subplot(323)
+    ax4 = fig.add_subplot(324)
+    ax5 = fig.add_subplot(325)
+    plot = MA_showplt(ax1, ax2, ax3, ax4, ax5, field, Path, t, rmse)
 plt.show()
