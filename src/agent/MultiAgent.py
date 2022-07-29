@@ -11,6 +11,7 @@ class MultiAgent():
         '''
         n: number of agents 
         '''
+        self.agents = agents
         self.agentlist =[]
         self.num_agent = len(agents)
         for robot in agents:
@@ -19,7 +20,17 @@ class MultiAgent():
 
             # add robot class based on yaml file parameters
             self.agentlist.append(MyopicAgent(singlerob['pos'])) 
-        
+    
+    def reinit(self):
+        self.agentlist =[]
+        self.num_agent = len(self.agents)
+        for robot in self.agents:
+            # robot target in yaml file 
+            singlerob = self.agents[robot]
+
+            # add robot class based on yaml file parameters
+            self.agentlist.append(MyopicAgent(singlerob['pos'])) 
+    
 
     def MA_explore_naive(self, field, step, horizon):
         X = []  # training input
@@ -47,12 +58,12 @@ class MultiAgent():
             # retrieve trajectory and trajectoy penalty
             ld_tr_list, ld_tr_pe = get_trajectory(ld.pose, horizon, ld.w, field.size)
             fl_tr_list, fl_tr_pe = get_trajectory(fl.pose, horizon, fl.w, field.size)
-            if not ld_tr_list:
-                ld.pose[2] = ld.pose[2] + math.pi
-                ld_tr_list = get_trajectory(ld.pose, horizon, ld.w, field.size)
-            if not fl_tr_list:
-                fl.pose[2] = fl.pose[2] + math.pi
-                fl_tr_list = get_trajectory(fl.pose, horizon, fl.w, field.size)
+            # if not ld_tr_list:
+            #     ld.pose[2] = ld.pose[2] + math.pi * 1.25
+            #     ld_tr_list = get_trajectory(ld.pose, horizon, ld.w, field.size)
+            # if not fl_tr_list:
+            #     fl.pose[2] = fl.pose[2] + math.pi * 1.25
+            #     fl_tr_list = get_trajectory(fl.pose, horizon, fl.w, field.size)
             
             for ld_tr, tr_pe in zip(ld_tr_list, ld_tr_pe):
                 ld_gain = self.ld_gain_func(ld_tr, field) + tr_pe
@@ -122,10 +133,10 @@ class MultiAgent():
             ld_tr_list, ld_tr_pe_list = get_trajectory(ld.pose, horizon, ld.w, field.size)
             fl_tr_list, fl_tr_pe_list = get_trajectory(fl.pose, horizon, fl.w, field.size)
             if not ld_tr_list:
-                ld.pose[2] = ld.pose[2] + math.pi
+                ld.pose[2] = ld.pose[2] + math.pi * 1.25
                 ld_tr_list, ld_tr_pe = get_trajectory(ld.pose, horizon, ld.w, field.size)
             if not fl_tr_list:
-                fl.pose[2] = fl.pose[2] + math.pi
+                fl.pose[2] = fl.pose[2] + math.pi * 1.25
                 fl_tr_list, fl_tr_pe = get_trajectory(fl.pose, horizon, fl.w, field.size)
             # filter out invalid trajectory
 
@@ -142,7 +153,7 @@ class MultiAgent():
                 max_fl_gain = -1000
                 field.GP.fit(fake_X, fake_Z)
                 for fl_tr, fl_tr_pe in zip(fl_tr_list, fl_tr_pe_list):
-                    fl_gain = self.fl_gain_func(fl_tr, field) + fl_tr_pe
+                    fl_gain = self.fl_gain_func(fl_tr, field) + 2* fl_tr_pe
                     # How to deal with outlier here ???????
                     if fl_gain > max_fl_gain:
                         max_fl_gain = fl_gain
@@ -157,12 +168,14 @@ class MultiAgent():
                 fake_Z += list(fl_z.reshape(-1,1))
                 field.GP.fit(fake_X, fake_Z)
 
-                ld_gain = self.ld_gain_func(ld_tr, field) + ld_tr_pe
+                ld_gain = self.ld_gain_func(ld_tr, field) + 2* ld_tr_pe
                
 
                 # compare with maxium global gain
-                if ld_gain + max_fl_gain > gl_max_gain:
-                    gl_max_gain = ld_gain + max_fl_gain
+                #ld_strategy = ld_gain + max_fl_gain
+                ld_strategy = ld_gain
+                if ld_strategy > gl_max_gain:
+                    gl_max_gain = ld_strategy
                     gl_best_ld_tr = ld_tr                    # global best leader trajectory
                     gl_best_fl_tr = best_fl_tr               # global best follower trajectory_
 
@@ -200,7 +213,7 @@ class MultiAgent():
         return information_gain + boundary_pe
     
     def rmse(self, field):
-        X,_,_,_,_ = generate_testing(field)
+        X,_,_,_,_ = generate_testing(field,margin=0)
         Z = field.GT.getMeasure(X)
         mu = field.GP.GPM.predict(X)
         return np.sqrt(np.mean((mu-Z)**2))

@@ -39,8 +39,14 @@ def MA_showplt(ax1, ax2, ax3, ax4, ax5, field, path, t, rmse):
     ax5.plot(t, rmse, 'g.:')
 
 
-def MA_rmse(ax1, t, rmse, rmse2):
+def MA_rmse(ax1, ax2, ax3, t, rmse, rmse2, path_naive, path_stbg):
     ax1.plot(t, rmse, "y.:")
     ax1.plot(t, rmse2, "g.:")
+    color = ['r','b','g','y']
+    for i, p in enumerate(path_naive): 
+        ax2.plot([pose[0] for pose in p], [pose[1] for pose in p], color[i])
+    
+    for i, p in enumerate(path_stbg): 
+        ax3.plot([pose[0] for pose in p], [pose[1] for pose in p], color[i])
 
 

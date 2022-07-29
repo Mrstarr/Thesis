@@ -15,10 +15,11 @@ def infogain(pose, field):
     return Gain
 
 def control_penalty(v, w):
-    controlpenalty = - 0.3 * (abs(w)**2)
+    controlpenalty = - 0.4 * (abs(w)**2)
     return controlpenalty
 
 def boundary_penalty(pose, field):
+    # Angle-based safety penalty 
     if math.cos(pose[2]) != 0:
         dis_rw = (field.size[0] - pose[0]) / math.cos(pose[2])  # distance to rightwall
         dis_lw = -pose[0] / math.cos(pose[2])    # distance to leftwall
@@ -40,8 +41,14 @@ def boundary_penalty(pose, field):
         dis_dw = 100
     mindis = min(dis_rw, dis_lw, dis_uw, dis_dw)
     
-    if mindis < 0.5:
-        boundpenalty = - 2 * math.exp(-mindis * 2)
+    # Distance-based safety penalty
+    # dis_rw = field.size[0] - pose[0]    # distance to right wall
+    # dis_lw = pose[0]                    # distance to left wall
+    # dis_uw = field.size[0] - pose[1]    # distance to upper wall
+    # dis_dw = pose[1]                    # distance to downside wall
+    #mindis = min(dis_rw, dis_lw, dis_uw, dis_dw)
+    if mindis < 3:
+        boundpenalty = - 3 * math.exp(-mindis)
     else:
         boundpenalty = 0 
     return boundpenalty
