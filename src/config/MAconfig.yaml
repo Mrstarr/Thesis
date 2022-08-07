@@ -2,7 +2,7 @@ agent:
     robot1:
         index: 0
         name: Frank
-        pos: [0,0,0]
+        pos: [0,15,0]
     robot2:
         index: 1
         name: Philipp

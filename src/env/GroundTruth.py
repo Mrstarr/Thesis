@@ -4,14 +4,14 @@ from math import exp
 class GroundTruth():
 
     def __init__(self) -> None:
-        # self.center1 = center1
-        # self.center2 = center2
-        # self.center3 = center3
-        # self.center4 = center4
-        center_x = np.array([2,7.5,13])
-        center_y = np.array([2,7.5,13])
-        xx, yy= np.meshgrid(center_x, center_y)
-        self.center_list = np.hstack((xx.reshape(len(center_x)**2, -1), yy.reshape(len(center_y)**2, -1)))
+        self.center1 = [2,12]
+        self.center2 = [13,10]
+        self.center3 = [7,7]
+        self.center4 = [11,9]
+        # center_x = np.array([2,7.5,13])
+        # center_y = np.array([2,7.5,13])
+        # xx, yy= np.meshgrid(center_x, center_y)
+        # self.center_list = np.hstack((xx.reshape(len(center_x)**2, -1), yy.reshape(len(center_y)**2, -1)))
             
 
     def getMeasure(self, X):
@@ -30,12 +30,12 @@ class GroundTruth():
         # NOISE DURING SAMPLING
         noise = np.random.normal(0, 0.01)
 
-        # y = 2*(np.exp(-(1/3/2)*(np.linalg.norm(X - self.center1, axis=1)**2)) \
-        #     + np.exp(-(1/3/2)*(np.linalg.norm(X - self.center2, axis=1)**2)) \
-        #     + np.exp(-(1/3/2)*(np.linalg.norm(X - self.center3, axis=1)**2)) \
-        #     + np.exp(-(1/3/2)*(np.linalg.norm(X - self.center4, axis=1)**2)))
-        y = np.ones(X.shape[0])
-        for center in self.center_list:
-            y += np.exp(-(1/2.5)*(np.linalg.norm(X - center, axis=1)**2))
+        y = 2*(np.exp(-(1/3/2)*(np.linalg.norm(X - self.center1, axis=1)**2)) \
+            + np.exp(-(1/4/2)*(np.linalg.norm(X - self.center2, axis=1)**2)) \
+            + np.exp(-(1/6/2)*(np.linalg.norm(X - self.center3, axis=1)**2)) \
+            + np.exp(-(1/2/2)*(np.linalg.norm(X - self.center4, axis=1)**2)))
+        # y = np.ones(X.shape[0])
+        # for center in self.center_list:
+        #     y += np.exp(-(1/2.5)*(np.linalg.norm(X - center, axis=1)**2))
 
         return y + noise

@@ -10,6 +10,9 @@ class Field(GroundTruth):
         self.size = size
         self.GP = GP
         self.GT = GroundTruth()
+
+    def sample_free(self):
+        return np.random.uniform([0,0],[self.size[0],self.size[1]], 2)
         
 
 

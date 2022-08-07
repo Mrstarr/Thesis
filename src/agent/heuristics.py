@@ -20,33 +20,33 @@ def control_penalty(v, w):
 
 def boundary_penalty(pose, field):
     # Angle-based safety penalty 
-    if math.cos(pose[2]) != 0:
-        dis_rw = (field.size[0] - pose[0]) / math.cos(pose[2])  # distance to rightwall
-        dis_lw = -pose[0] / math.cos(pose[2])    # distance to leftwall
-    else: 
-        dis_rw = dis_lw = 100
+    # if math.cos(pose[2]) != 0:
+    #     dis_rw = (field.size[0] - pose[0]) / math.cos(pose[2])  # distance to rightwall
+    #     dis_lw = -pose[0] / math.cos(pose[2])    # distance to leftwall
+    # else: 
+    #     dis_rw = dis_lw = 100
     
-    if math.sin(pose[2])!= 0:
-        dis_uw = (field.size[0] - pose[1])/ math.sin(pose[2])
-        dis_dw = -pose[1]/ math.sin(pose[2])
-    else:
-        dis_uw = dis_dw = 100
-    if dis_rw < 0:  
-        dis_rw = 100
-    if dis_lw < 0:  
-        dis_lw = 100
-    if dis_uw < 0:  
-        dis_uw = 100
-    if dis_dw < 0:  
-        dis_dw = 100
-    mindis = min(dis_rw, dis_lw, dis_uw, dis_dw)
+    # if math.sin(pose[2])!= 0:
+    #     dis_uw = (field.size[0] - pose[1])/ math.sin(pose[2])
+    #     dis_dw = -pose[1]/ math.sin(pose[2])
+    # else:
+    #     dis_uw = dis_dw = 100
+    # if dis_rw < 0:  
+    #     dis_rw = 100
+    # if dis_lw < 0:  
+    #     dis_lw = 100
+    # if dis_uw < 0:  
+    #     dis_uw = 100
+    # if dis_dw < 0:  
+    #     dis_dw = 100
+    # mindis = min(dis_rw, dis_lw, dis_uw, dis_dw)
     
     # Distance-based safety penalty
-    # dis_rw = field.size[0] - pose[0]    # distance to right wall
-    # dis_lw = pose[0]                    # distance to left wall
-    # dis_uw = field.size[0] - pose[1]    # distance to upper wall
-    # dis_dw = pose[1]                    # distance to downside wall
-    #mindis = min(dis_rw, dis_lw, dis_uw, dis_dw)
+    dis_rw = field.size[0] - pose[0]    # distance to right wall
+    dis_lw = pose[0]                    # distance to left wall
+    dis_uw = field.size[0] - pose[1]    # distance to upper wall
+    dis_dw = pose[1]                    # distance to downside wall
+    mindis = min(dis_rw, dis_lw, dis_uw, dis_dw)
     if mindis < 3:
         boundpenalty = - 3 * math.exp(-mindis)
     else:

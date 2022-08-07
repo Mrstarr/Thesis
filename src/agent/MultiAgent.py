@@ -1,9 +1,10 @@
+from ast import Raise
 from matplotlib.style import available
 from agent.MyopicAgent import MyopicAgent
 from agent.heuristics import *
 from planning.trajectory import * 
-from agent.heuristics import *
 from utils import generate_testing
+import time
 
 class MultiAgent():
 
@@ -50,6 +51,12 @@ class MultiAgent():
         timestamp = []
         rmsestamp = []
         for s in range(step):
+
+            # record runtime each planning step 
+            # if s % 100 == 0:
+            #     t_now = time.time()
+
+
             max_ld_gain = -1000
             max_fl_gain = -1000
             ld = self.agentlist[0]  # leader
@@ -64,9 +71,13 @@ class MultiAgent():
             # if not fl_tr_list:
             #     fl.pose[2] = fl.pose[2] + math.pi * 1.25
             #     fl_tr_list = get_trajectory(fl.pose, horizon, fl.w, field.size)
+
+            if not ld_tr_list or not fl_tr_list:
+                raise RuntimeError('No feasible trajectory found, inevitable collision')
             
+            field.GP.fit(X,Z)
             for ld_tr, tr_pe in zip(ld_tr_list, ld_tr_pe):
-                ld_gain = self.ld_gain_func(ld_tr, field) + tr_pe
+                ld_gain = self.ld_gain_func(ld_tr, field) + 2*tr_pe
                 if ld_gain > max_ld_gain:
                     max_ld_gain = ld_gain
                     best_ld_tr = ld_tr
@@ -80,7 +91,7 @@ class MultiAgent():
             field.GP.fit(fake_X, fake_Z)
             
             for fl_tr, tr_pe in zip(fl_tr_list, fl_tr_pe):
-                fl_gain = self.fl_gain_func(fl_tr, field) + tr_pe
+                fl_gain = self.fl_gain_func(fl_tr, field) + 2*tr_pe
                 if fl_gain > max_fl_gain:
                     max_fl_gain = fl_gain
                     best_fl_tr = fl_tr
@@ -99,8 +110,12 @@ class MultiAgent():
             # calculate RMSE to ground truth
             if (s % 5) == 0:
                 timestamp.append(s)
-                rmsestamp.append(self.rmse(field))
-            
+                rmsestamp.append(self.rvse(field))
+
+
+            # if s % 100 == 0:
+            #     print(time.time()- t_now)
+
         return P, timestamp, rmsestamp
     
 
@@ -127,18 +142,26 @@ class MultiAgent():
         rmsestamp = []
 
         for s in range(step):
+
+            # record runtime each planning step 
+            # if s % 100 == 0:
+            #     t_now = time.time()
+
             gl_max_gain = -1000             # global gain
 
             # Plan trajectory candidate
             ld_tr_list, ld_tr_pe_list = get_trajectory(ld.pose, horizon, ld.w, field.size)
             fl_tr_list, fl_tr_pe_list = get_trajectory(fl.pose, horizon, fl.w, field.size)
-            if not ld_tr_list:
-                ld.pose[2] = ld.pose[2] + math.pi * 1.25
-                ld_tr_list, ld_tr_pe = get_trajectory(ld.pose, horizon, ld.w, field.size)
-            if not fl_tr_list:
-                fl.pose[2] = fl.pose[2] + math.pi * 1.25
-                fl_tr_list, fl_tr_pe = get_trajectory(fl.pose, horizon, fl.w, field.size)
-            # filter out invalid trajectory
+            # if not ld_tr_list:
+            #     ld.pose[2] = ld.pose[2] + math.pi * 1.25
+            #     ld_tr_list, ld_tr_pe = get_trajectory(ld.pose, horizon, ld.w, field.size)
+            # if not fl_tr_list:
+            #     fl.pose[2] = fl.pose[2] + math.pi * 1.25
+            #     fl_tr_list, fl_tr_pe = get_trajectory(fl.pose, horizon, fl.w, field.size)
+            
+            if not ld_tr_list or not fl_tr_list:
+                raise RuntimeError('No feasible trajectory found, inevitable collision')
+
 
             for ld_tr, ld_tr_pe in zip(ld_tr_list, ld_tr_pe_list):
                 # Leader try to move
@@ -195,11 +218,13 @@ class MultiAgent():
             # calculate RMSE to ground truth
             if (s % 5) == 0:
                 timestamp.append(s)
-                rmsestamp.append(self.rmse(field))
-
+                rmsestamp.append(self.rvse(field))
+            # if s % 100 == 0:
+            #     print(time.time()- t_now)
         """
         If you want to output anything
-        """
+        """            
+            
         return P, timestamp, rmsestamp
     
     def fl_gain_func(self, fl_tr, field):
@@ -213,7 +238,18 @@ class MultiAgent():
         return information_gain + boundary_pe
     
     def rmse(self, field):
+        """
+        Root-mean-square-error
+        """
         X,_,_,_,_ = generate_testing(field,margin=0)
         Z = field.GT.getMeasure(X)
         mu = field.GP.GPM.predict(X)
         return np.sqrt(np.mean((mu-Z)**2))
+    
+    def rvse(self, field):
+        """
+        Root-mean-variance-error
+        """
+        X,_,_,_,_ = generate_testing(field,margin=0)
+        _, std = field.GP.GPM.predict(X, return_std=True)
+        return np.sqrt(np.mean(std**2))
