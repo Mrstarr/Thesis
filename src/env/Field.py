@@ -12,7 +12,8 @@ class Field(GroundTruth):
         self.GT = GroundTruth()
 
     def sample_free(self):
-        return np.random.uniform([0,0],[self.size[0],self.size[1]], 2)
+        return tuple(np.random.uniform([0,0],[self.size[0],self.size[1]], 2))
+       
         
 
 

@@ -13,7 +13,7 @@ class RRT(RRTtree):
         self.X = X            # planning space
         self.start_point = x_init # tuple [x,y]
         self.samples = samples
-        super().__init__(r)
+        super().__init__(X,r)
 
     def rrt(self): 
         i = 0
@@ -25,6 +25,7 @@ class RRT(RRTtree):
             x_rand = self.X.sample_free()
             self.extend(x_rand)
             i+=1 
+    
 
 
 

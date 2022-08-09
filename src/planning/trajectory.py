@@ -16,7 +16,7 @@ def get_trajectory(X, pose, horizon, w):
     init_pose = pose
     for i in range(len(w)):
         next = motion(init_pose, v, w[i])
-        if not (0<next[0]<size[0] and 0<next[1]<size[1]):  # check the validity of next movement
+        if not boundarycheck(X, next):  # check the validity of next movement
             continue
         npose = init_pose
         lst_len = len(trajectory)

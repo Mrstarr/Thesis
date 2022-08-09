@@ -85,12 +85,21 @@ class RRTtree():
                 min_dis = dis
                 x_new = x_r
         
-        return x_new
+        return tuple(x_new)
+
+    def distance(x, y):
+        x = np.array(x)
+        y = np.array(y)
+        return np.sqrt(np.sum((y-x)**2))
 
 
-    def extend(self, T, x_rand):
+    def extend(self, x_rand):
         """
         """
-        x_nearest = self.nearest(T, x_rand)
+        x_nearest = self.nearest
+        (x_rand)
         x_new = self.steer(x_nearest, x_rand)
         self.connect(x_new, x_nearest)
+
+    
+    # def visualize(self,)
