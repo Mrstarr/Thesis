@@ -5,7 +5,7 @@ from utils import generate_testing
 
 def showplt(ax1, ax2, ax3, ax4, ax5, field, path, t, rmse):
     X, x, y, gridx, gridy = generate_testing(field)
-    Z = field.GT.getMeasure(X)
+    Z = np.array(field.measure(X))
     CS = ax1.contourf(x, y, Z.reshape(gridx,gridy), 20)
 
     mu, var = field.GP.GPM.predict(X, return_std = True)
@@ -25,7 +25,7 @@ def MA_showplt(ax1, ax2, ax3, ax4, ax5, field, path, t, rmse):
     A function for multiagent visualization
     '''
     X, x, y, gridx, gridy = generate_testing(field)
-    Z = field.GT.getMeasure(X)  
+    Z = np.array(field.measure(X))
     ax1.imshow(Z.reshape(gridx,gridy),origin='lower',extent=[0,15,0,15])
 
     mu, var = field.GP.GPM.predict(X, return_std = True)
@@ -54,6 +54,7 @@ def MA_rmse(ax1, ax2, ax3, t, rmse, rmse2, path_naive, path_stbg):
         ax3.plot([pose[0] for pose in p], [pose[1] for pose in p], color[i])
     ax3.set_xlim(0, 15)
     ax3.set_ylim(0, 15)
+
 
 def MA_planningmap(ax, path, field):
     X, x, y, gridx, gridy = generate_testing(field)

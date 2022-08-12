@@ -1,4 +1,7 @@
 from ast import Raise
+from os import path
+from pathlib import Path
+from re import L
 from matplotlib.style import available
 from agent.MyopicAgent import MyopicAgent
 from agent.heuristics import *
@@ -6,39 +9,97 @@ from planning.trajectory import *
 from utils import generate_testing
 import time
 
-class MultiAgent():
 
-    def __init__(self, agents) -> None:
-        '''
-        n: number of agents 
-        '''
-        self.agents = agents
-        self.agentlist =[]
-        self.num_agent = len(agents)
-        for robot in agents:
-            # robot target in yaml file 
-            singlerob = agents[robot]
 
-            # add robot class based on yaml file parameters
-            self.agentlist.append(MyopicAgent(singlerob['pos'])) 
+
+
+class MultiAgentExplore():
+
+    def __init__(self, X, x_inits, step) -> None:
+        """
+        Multi-agent exploration
+        :param X: Search field
+        :param poses: agents'poses
+        :param n: number of agents
+        :param x: training input data
+        :param y: training output data
+        """
+        self.X = X
+        self.poses = x_inits   
+        self.n = len(x_inits) 
+        self.x = []  
+        self.y = []
+        self.step = step
+
+
+    def explore(self):
+        paths = [[]]*self.n
+        t = []
+        rmses = []
+        
+        for i in range(self.step):
+            paths = [path + [p[0:2]] for (path,p) in zip(paths,self.poses)]
+            # update field state 
+            self.update_field()
+
+            # generate trajectory candidate
+            ld_tr, ld_tr_pe = get_trajectory(self.X, self.poses[0], horizon=3)
+            fl_tr, fl_tr_pe = get_trajectory(self.X, self.poses[1],horizon=3)
+            # coordination
+            trajectory = self.greedy(ld_tr, ld_tr_pe, fl_tr, fl_tr_pe)
+            
+            # update agent state
+            self.update_agent(trajectory)
+            # evaluate
+            if (i % 5) == 0:
+                t.append(i)
+                rmses.append(self.rvse(self.X))
+        return paths, t, rmses
+
+    def update_field(self):
+        self.x+= self.poses  
+        self.y+= self.X.measure(self.poses)
+        self.X.GP.fit(self.x, self.y)
+
     
-    def reinit(self):
-        self.agentlist =[]
-        self.num_agent = len(self.agents)
-        for robot in self.agents:
-            # robot target in yaml file 
-            singlerob = self.agents[robot]
+    def update_agent(self, paths):
+        for i,p in enumerate(paths):
+            self.poses[i] = p[0]
 
-            # add robot class based on yaml file parameters
-            self.agentlist.append(MyopicAgent(singlerob['pos'])) 
     
+    def greedy(self, ld_tr, ld_tr_pe, fl_tr, fl_tr_pe):
+        max_ld_gain = -1000
+        max_fl_gain = -1000
+        for ld_tr, tr_pe in zip(ld_tr, ld_tr_pe):
+                ld_gain = self.ld_gain_func(ld_tr) + 2*tr_pe
+                if ld_gain > max_ld_gain:
+                    max_ld_gain = ld_gain
+                    best_ld_tr = ld_tr
+        z = self.X.measure([p[0:2] for p in best_ld_tr])
+
+        # condition GP along generated path
+        x = self.x.copy()
+        y = self.y.copy()
+        x += best_ld_tr
+        y += z
+        self.X.GP.fit(x,y)
+        
+        for fl_tr, tr_pe in zip(fl_tr, fl_tr_pe):
+            fl_gain = self.fl_gain_func(fl_tr) + 2*tr_pe
+            if fl_gain > max_fl_gain:
+                max_fl_gain = fl_gain
+                best_fl_tr = fl_tr
+
+        return [best_ld_tr, best_fl_tr]
+
+
 
     def MA_explore_naive(self, field, step, horizon):
         X = []  # training input
         Z = []  # training output
         P = []
 
-        for i in range(self.num_agent):
+        for i in range(self.n):
             P.append([])
 
         # initial step
@@ -63,8 +124,10 @@ class MultiAgent():
             fl = self.agentlist[1]  # follower
 
             # retrieve trajectory and trajectoy penalty
-            ld_tr_list, ld_tr_pe = get_trajectory(ld.pose, horizon, ld.w, field.size)
-            fl_tr_list, fl_tr_pe = get_trajectory(fl.pose, horizon, fl.w, field.size)
+            ld_tr_list, ld_tr_pe = get_trajectory(field, ld.pose, horizon, ld.w)
+            fl_tr_list, fl_tr_pe = get_trajectory(field, fl.pose, horizon, fl.w)
+
+            # Emergency turn off
             # if not ld_tr_list:
             #     ld.pose[2] = ld.pose[2] + math.pi * 1.25
             #     ld_tr_list = get_trajectory(ld.pose, horizon, ld.w, field.size)
@@ -150,8 +213,8 @@ class MultiAgent():
             gl_max_gain = -1000             # global gain
 
             # Plan trajectory candidate
-            ld_tr_list, ld_tr_pe_list = get_trajectory(ld.pose, horizon, ld.w, field.size)
-            fl_tr_list, fl_tr_pe_list = get_trajectory(fl.pose, horizon, fl.w, field.size)
+            ld_tr_list, ld_tr_pe_list = get_trajectory(field, ld.pose, horizon, ld.w)
+            fl_tr_list, fl_tr_pe_list = get_trajectory(field, fl.pose, horizon, fl.w)
             # if not ld_tr_list:
             #     ld.pose[2] = ld.pose[2] + math.pi * 1.25
             #     ld_tr_list, ld_tr_pe = get_trajectory(ld.pose, horizon, ld.w, field.size)
@@ -227,14 +290,14 @@ class MultiAgent():
             
         return P, timestamp, rmsestamp
     
-    def fl_gain_func(self, fl_tr, field):
-        information_gain = infogain(fl_tr, field)
-        boundary_pe = boundary_penalty(fl_tr[0], field)
+    def fl_gain_func(self, fl_tr):
+        information_gain = infogain(fl_tr, self.X)
+        boundary_pe = boundary_penalty(fl_tr[0], self.X)
         return information_gain + boundary_pe
 
-    def ld_gain_func(self, ld_tr, field):
-        information_gain = infogain(ld_tr, field)
-        boundary_pe = boundary_penalty(ld_tr[0], field)
+    def ld_gain_func(self, ld_tr):
+        information_gain = infogain(ld_tr, self.X)
+        boundary_pe = boundary_penalty(ld_tr[0], self.X)
         return information_gain + boundary_pe
     
     def rmse(self, field):

@@ -64,11 +64,6 @@ def mutualinformation(pose, field):
     '''
     '''
 
-def boundarycheck(field, pose, barrier):
-    if barrier < pose[0] < field.size[0]-barrier and barrier < pose[1] < field.size[1]-barrier:
-        return True
-    else:
-        return False
 
 def sumgain(pose, field, v, w):
     controlp = control_penalty(v, w)

@@ -37,4 +37,6 @@ class GaussianProcess2D():
     def fit(self, X, y):
         if type(X).__module__ is not 'numpy':
             X = np.array(X)
+        if X[0].shape[0] > 2:
+            X = X[:,0:2]
         self.GPM.fit(X, y)

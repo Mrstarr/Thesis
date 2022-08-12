@@ -4,7 +4,7 @@ from agent.heuristics import control_penalty
 
 
 
-def get_trajectory(X, pose, horizon, w):
+def get_trajectory(X, pose, horizon):
     """
     return a list contains N trajectories of robot
     each trajectory has H points, where H is the horizon.
@@ -14,8 +14,8 @@ def get_trajectory(X, pose, horizon, w):
     trajectory_pe = [] 
     v = 0.5
     init_pose = pose
-    for i in range(len(w)):
-        next = motion(init_pose, v, w[i])
+    for w in np.linspace(-math.pi/8, math.pi/8, 5):
+        next = motion(init_pose, v, w)
         if not boundarycheck(X, next):  # check the validity of next movement
             continue
         npose = init_pose
@@ -24,13 +24,13 @@ def get_trajectory(X, pose, horizon, w):
 
         control_pe = 0              # calculate control cost during iteration
         for j in range(horizon):
-            npose = motion(npose, v, w[i])
+            npose = motion(npose, v, w)
             if not boundarycheck(X, npose):
                 control_pe -= 5   # mid-way collision intrigue penalty
                 break
             trajectory[lst_len].append(npose)
 
-        control_pe += control_penalty(v=1, w=w[i])        
+        control_pe += control_penalty(v, w)        
         trajectory_pe.append(control_pe)
     
     return trajectory, trajectory_pe
@@ -48,7 +48,14 @@ def motion(pose, v, w):
         ptheta = pose[2] + w*dt
         ptheta = ptheta % (2*math.pi)
     
-    return np.array([px,py,ptheta])
+    return (px,py,ptheta)
+
+
+def omnimotion(pose, v, theta):
+    dt = 1
+    px = pose[0]+ v * math.cos(theta)*dt
+    py = pose[1]+ v * math.sin(theta)*dt
+    return np.array([px,py,pose[2]])
 
 
 def boundarycheck(field, pose, barrier=0):

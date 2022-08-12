@@ -2,9 +2,10 @@ from turtle import color
 from numpy import dtype
 from torch import int32
 from planning.rrt_tree import *
-import matplotlib.pyplot as plt
+import time
 
-class RRT(RRTtree):
+
+class RRT(MARRTtree):
     '''
     X: search & planning space
     x_init: start point
@@ -14,29 +15,36 @@ class RRT(RRTtree):
     '''
     def __init__(self, X, x_init, samples, r) -> None:
         self.X = X            # planning space
-        self.start_point = x_init # tuple [x,y]
+        self.start_point = x_init  # list of tuple [(x1,y1),(x2,y2)]
         self.samples = samples
-        super().__init__(X,r)
+        super().__init__(X, r, x_init)
+
 
     def rrt(self): 
         i = 0
-
-        self.add_vertice(self.start_point)
-        #self.add_edge(self.start_point, None)
-
+        t = time.time()
         while i < self.samples:
-            x_rand = self.X.sample_free()
-            self.extend(x_rand)
-            i+=1 
+            self.extend()
+            i+=1
+        print("rrt running time:", time.time()-t)
     
-    def visualize(self):
-        poses = np.array(self.Vlist)
-        at = np.array(list(self.E.keys())) # arrow head
-        ah = np.array(list(self.E.values())) # arrow tail
-        for (h,t) in zip(ah, at):
-            plt.plot([h[0],t[0]],[h[1],t[1]], "b->", linewidth=0.5, markersize=0.5)
-        #plt.annotate(s='', xy=arrow_tail,xytext =(0,0), arrowprops=dict(arrowstyle='->'))
-        plt.show()
+
+    def get_path(self):
+        path_tree = []
+        for (idx,tree) in enumerate(self.tree):
+            path_tree.append([])              # add path tree for each agent
+            for v in tree.V_list:          
+                if not v.has_child: 
+                    path = []                         # add single path to current tree
+                    while v.parent is not None:
+                        # backward until the root
+                        path.append(v.pose)
+                        v = tree.V_list[v.parent]
+                    if  5 < len(path) < 10:
+                        path_tree[idx].append(path)
+        return path_tree
+
+    
         
 
 
