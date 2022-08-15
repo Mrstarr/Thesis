@@ -1,11 +1,11 @@
 from logging import raiseExceptions
 from telnetlib import GA
 from xml.etree.ElementTree import TreeBuilder
-from env.Field import *
-from agent.MultiAgentExplore import *
+from Field import *
+from MultiAgentExplore import *
 
 import matplotlib.pyplot as plt
-from gp.Gaussian2D import GaussianProcess2D
+from Gaussian2D import GaussianProcess2D
 from visualization import *
 
 import argparse
@@ -23,39 +23,24 @@ import yaml
 # parser.add_argument("-ho", "--horizon", type=int, default=3, required=False, help="Horizon of explore")
 # args = parser.parse_args()
 
-x_init = [(1,1,0), (14,14, 3.14)]
-gp = GaussianProcess2D(alpha=1e-2)
-X = Field(gp)
-explorer = MultiAgentExplore(X, x_init, 50)
-
-path, t, rmse = explorer.explore()
-# if args.mode == "no":
-#     path, t, rmse = multirob.MA_explore_naive(field, step=args.step, horizon=args.horizon)
-# elif args.mode == "stbg":
-#     path, t, rmse = multirob.MA_explore_stackelberg(field, step=args.step, horizon=args.horizon)
-# elif args.mode == "both":
-#     path_naive, t, rmse = multirob.MA_explore_naive(field, step=args.step, horizon=args.horizon)
-#     multirob.reinit()
-#     path_stbg, _, rmse2 = multirob.MA_explore_stackelberg(field, step=args.step, horizon=args.horizon)
-# else:
-#     raise RuntimeError('no such coordination method')
-
-
-# Visualization
-
-
 fig = plt.figure()
 
 # if args.mode == "both":
-#     ax1 = fig.add_subplot(131)
-#     ax2 = fig.add_subplot(132)
-#     ax3 = fig.add_subplot(133)
-#     plot = MA_rmse(ax1, ax2, ax3, t, rmse, rmse2, path_naive, path_stbg)
-# else:
-ax1 = fig.add_subplot(151)
-ax2 = fig.add_subplot(152)
-ax3 = fig.add_subplot(153)
-ax4 = fig.add_subplot(154)
-ax5 = fig.add_subplot(155)
-plot = MA_showplt(ax1, ax2, ax3, ax4, ax5, explorer.X, path, t, rmse)
+ax1 = fig.add_subplot(131)
+ax2 = fig.add_subplot(132)
+ax3 = fig.add_subplot(133)
+step = 15
+x_init = [(0,0,0), (0,0,0)]
+x_init2 = [(0,0,0), (0,0,0)]
+gp = GaussianProcess2D(alpha=1e-2)
+gp2 = GaussianProcess2D(alpha=1e-2)
+X = Field(gp)
+X2 = Field(gp2)
+explorer = MultiAgentExplore(X, x_init, 120)
+explorer2 = MultiAgentExplore(X2, x_init2, 120)
+path_greedy, t, rmse = explorer.explore("greedy")
+MA_path(ax1, explorer.X, path_greedy)
+path_stbg, t, rmse2 = explorer2.explore("stbg")
+MA_path(ax2, explorer2.X, path_stbg)
+MA_rmse(ax3, t, rmse, rmse2)
 plt.show()

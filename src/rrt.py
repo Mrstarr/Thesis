@@ -1,7 +1,7 @@
 from turtle import color
 from numpy import dtype
 from torch import int32
-from planning.rrt_tree import *
+from rrt_tree import *
 import time
 
 
@@ -22,11 +22,11 @@ class RRT(MARRTtree):
 
     def rrt(self): 
         i = 0
-        t = time.time()
+        #t = time.time()
         while i < self.samples:
             self.extend()
             i+=1
-        print("rrt running time:", time.time()-t)
+        #print("rrt running time:", time.time()-t)
     
 
     def get_path(self):
@@ -38,10 +38,10 @@ class RRT(MARRTtree):
                     path = []                         # add single path to current tree
                     while v.parent is not None:
                         # backward until the root
-                        path.append(v.pose)
+                        path.append(v)
                         v = tree.V_list[v.parent]
-                    if  5 < len(path) < 10:
-                        path_tree[idx].append(path)
+                    if  8 < len(path)< 10:
+                        path_tree[idx].append(path[::-1])
         return path_tree
 
     

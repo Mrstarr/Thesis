@@ -27,12 +27,14 @@ class GaussianProcess2D():
         else:
             self.GPM = gaussian_process.GaussianProcessRegressor(alpha=alpha)
 
+
     def predict(self, X, return_cov = False):
         if not return_cov:
             mean, sigma = self.GPM.predict(X, return_std=True)
         else:
             mean, sigma = self.GPM.predict(X, return_cov=True)
         return mean, sigma
+    
     
     def fit(self, X, y):
         if type(X).__module__ is not 'numpy':

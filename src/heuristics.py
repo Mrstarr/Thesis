@@ -10,13 +10,15 @@ def infogain(pose, field):
     if pose.ndim == 1:
         _, sigma = field.GP.predict([pose[0:2]])   #standard variance
     else:
-        _, sigma = field.GP.predict(pose[:,0:2], return_cov = True)
+        #_, sigma = field.GP.predict(pose[:,0:2], return_cov = True)
+        _, sigma = field.GP.predict(pose[:,0:2])
+        sigma = np.mean(sigma)
     Gain = differentialentropy(sigma)
     return Gain
 
-def control_penalty(v, w):
-    controlpenalty = - 0.4 * (abs(w)**2)
-    return controlpenalty
+def control_penalty(path):
+    w = [x.w for x in path]
+    return np.sum(- 0.5 * (abs(np.array(w))**2))/len(w)
 
 def boundary_penalty(pose, field):
     # Angle-based safety penalty 
@@ -47,17 +49,15 @@ def boundary_penalty(pose, field):
     dis_uw = field.size[0] - pose[1]    # distance to upper wall
     dis_dw = pose[1]                    # distance to downside wall
     mindis = min(dis_rw, dis_lw, dis_uw, dis_dw)
-    if mindis < 3:
-        boundpenalty = - 3 * math.exp(-mindis)
+    if mindis < 1:
+        boundpenalty = - 3 * math.exp(-1 * mindis)
     else:
         boundpenalty = 0 
     return boundpenalty
 
 def differentialentropy(sigma):
-    if sigma.shape[0] == 1:
-        return 0.5 * math.log10(2*math.pi*math.e*sigma)
-    elif sigma.shape[0] > 1:
-        return 0.5 * math.log10(2*math.pi*math.e*np.linalg.det(sigma))
+    return 0.5 * math.log10(2*math.pi*math.e*sigma)
+    #return 0.5 * math.log10(2*math.pi*math.e*np.linalg.det(sigma))
 
 
 def mutualinformation(pose, field):

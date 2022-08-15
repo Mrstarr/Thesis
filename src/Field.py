@@ -21,8 +21,16 @@ class Field():
         self.center3 = np.array([7,7])
         self.center4 = np.array([11,9])
 
+
     def sample_free(self):
         return tuple(np.random.uniform([0,0],[self.size[0],self.size[1]], 2))
+
+
+    def sample_normal(self,pose):
+        s = np.random.normal([pose[0],pose[1]],2)
+        while s[0] < 0 or s[0] > 15 or s[1] < 0 or s[1] > 15:
+            s = np.random.normal([pose[0],pose[1]],2)
+        return tuple(s)
 
 
     def measure(self, X):
@@ -46,7 +54,19 @@ class Field():
             + np.exp(-(1/2/2)*(np.linalg.norm(X - self.center4, axis=1)**2)))
         return list(y + noise)
        
-        
+
+    def sample_grid(self):
+        '''
+        generate testing data as input 
+        also contour x
+        '''
+        gridsize_x = self.size[0]*20+1
+        gridsize_y = self.size[1]*20+1
+        x = np.linspace(0, self.size[0], gridsize_x)
+        y = np.linspace(0, self.size[1], gridsize_y)
+        xx, yy = np.meshgrid(x,y)
+        X = np.hstack((xx.reshape(gridsize_x**2, -1), yy.reshape(gridsize_y**2, -1)))
+        return X
 
 
 

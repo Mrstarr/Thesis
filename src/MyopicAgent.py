@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from numpy import polysub
 from sklearn.preprocessing import normalize
 from matplotlib.animation import FuncAnimation
-from agent.heuristics import *
+from heuristics import *
 
 class MyopicAgent():
     def __init__(self, InitPos) -> None:

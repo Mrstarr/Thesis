@@ -3,22 +3,23 @@ from tkinter import SOLID
 from matplotlib import markers
 import numpy as np
 from rtree import index
-from planning.trajectory import *
+from trajectory import *
 import matplotlib.pyplot as plt
 import time
 
 class Vertice():
 
-    def __init__(self, pose, parent) -> None:
+    def __init__(self, pose, parent, w) -> None:
         """
-        p -> position
-        c -> cost
-        g -> gain
-        u -> utility
+        pose: 3D pose of the node
+        parent: previous node linked to current node
+        has_child: if it has a child node
+        w: control value it takes to steer to current node
         """
         self.pose = pose
         self.parent = parent
         self.has_child = False
+        self.w = w
 
 
 
@@ -41,20 +42,16 @@ class MARRTtree(object):
         for root in x_init:
             self.tree.append(RRTtree(root))
 
-
-
-
             
-
     def extend(self):
         for tree in self.tree:
             x_rand = self.X.sample_free()    # numpy array 
+            #x_rand = self.X.sample_normal(tree.root)
             x_nearest_idx, x_nearest_pose= tree.nearest(x_rand)  # vertice class
             x_new = self.steer(x_nearest_pose, x_rand)  # new pose      
             if x_new is not None:
                 tree.connect(x_new, x_nearest_pose, x_nearest_idx)
             
-           
             
     def steer(self, x, y):
         """
@@ -74,8 +71,9 @@ class MARRTtree(object):
             if dis < min_dis:
                 min_dis = dis
                 x_new = x_r
+                w = r
         if x_new is not None:
-            return tuple(x_new)
+            return (tuple(x_new), w)
         else:
             return None
 
@@ -105,7 +103,7 @@ class MARRTtree(object):
         plt.show()
 
     
-    def visualize_path(self):
+    def visualize_path(self, paths):
         idx = 0
         for tree in self.tree:
             at = np.array(list(tree.E.keys())) # arrow head
@@ -115,14 +113,14 @@ class MARRTtree(object):
             idx+=1
         for x in self.x_init:
             plt.plot(x[0], x[1], marker=(3, 0, x[2] / np.pi *180 - 90), markersize=20, linestyle='None')
-        path_tree = self.get_path()
 
-        for(idx,pt) in enumerate(path_tree):
+        for(idx,pt) in enumerate(paths):
             for path in pt:
                 l = len(path)
+                path = [x.pose for x in path]
                 for i in range(l-1):
                     plt.plot([path[i][0],path[i+1][0]],[path[i][1],path[i+1][1]], "g->", linewidth=0.5, markersize=0.5)
-                plt.plot([self.x_init[idx][0], path[-1][0]], [self.x_init[idx][1],path[-1][1] ], "g->", linewidth=0.5, markersize=0.5)
+                plt.plot([self.x_init[idx][0], path[0][0]], [self.x_init[idx][1],path[0][1] ], "g->", linewidth=0.5, markersize=0.5)
         plt.xlim(0, 15)
         plt.ylim(0, 15)
         plt.show()
@@ -140,12 +138,13 @@ class RRTtree():
         self.V_count = 0
         self.E = {}
         self.root = root
-        self.add_vertice(root, None)
+        self.add_vertice((root,None), None)
 
 
-    def add_vertice(self, pose, parent_idx):
+    def add_vertice(self, x_new, parent_idx):
+        pose = x_new[0]
         self.V.insert(self.V_count, np.concatenate((pose[0:2],pose[0:2])), pose)   # sole point as bounding box\
-        self.V_list.append(Vertice(pose, parent_idx))
+        self.V_list.append(Vertice(pose, parent_idx, x_new[1]))
         self.V_count += 1
 
         
@@ -176,9 +175,9 @@ class RRTtree():
     #     return self.V.nearest(x, 1, objects="raw")
 
 
-    def connect(self, child, parent, idx):
-        self.add_vertice(child, idx)
-        self.add_edge(child, parent)
+    def connect(self, x_new, parent, idx):
+        self.add_vertice(x_new, idx)
+        self.add_edge(x_new[0], parent)
         self.V_list[idx].has_child = True
         
 

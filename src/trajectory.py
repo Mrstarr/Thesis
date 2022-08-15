@@ -1,6 +1,6 @@
 import math
 import numpy as np
-from agent.heuristics import control_penalty
+from heuristics import control_penalty
 
 
 
