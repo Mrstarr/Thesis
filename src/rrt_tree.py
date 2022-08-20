@@ -89,13 +89,12 @@ class MARRTtree(object):
 
 
     def visualize(self):
-        colorlist = ["r","b","g","y"]
         idx = 0
         for tree in self.tree:
             at = np.array(list(tree.E.keys())) # arrow head
             ah = np.array(list(tree.E.values())) # arrow tail
             for (h,t) in zip(ah, at):
-                plt.plot([h[0],t[0]],[h[1],t[1]], str(colorlist[idx]+"->"), linewidth=0.5, markersize=0.5)
+                plt.plot([h[0],t[0]],[h[1],t[1]], color=(0.1,0.1,0.1,0.3), linestyle="solid", linewidth=0.5, markersize=0.5)
             idx+=1
             #plt.annotate(s='', xy=arrow_tail,xytext =(0,0), arrowprops=dict(arrowstyle='->'))
         for x in self.x_init:

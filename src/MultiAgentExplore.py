@@ -52,7 +52,7 @@ class MultiAgentExplore():
                 rrt_paths = rrt_planner.get_path()
 
                 clustered_path = self.select_path(rrt_paths)
-                #rrt_planner.visualize_path(clustered_path)
+                rrt_planner.visualize()
 
                 #field_and_path(self.X, paths)
 
