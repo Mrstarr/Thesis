@@ -1,8 +1,5 @@
-from turtle import color
-from numpy import dtype
-from torch import int32
 from rrt_tree import *
-import time
+from Field import Field
 
 
 class RRT(MARRTtree):
@@ -14,19 +11,19 @@ class RRT(MARRTtree):
     self.r: control variables, angular velocity in this case 
     '''
     def __init__(self, X, x_init, samples, r) -> None:
-        self.X = X            # planning space
-        self.start_point = x_init  # list of tuple [(x1,y1),(x2,y2)]
         self.samples = samples
         super().__init__(X, r, x_init)
 
 
+    def update(self, X, x_init):
+        super().__init__(X, self.r, x_init)
+
+
     def rrt(self): 
         i = 0
-        #t = time.time()
         while i < self.samples:
             self.extend()
             i+=1
-        #print("rrt running time:", time.time()-t)
     
 
     def get_path(self):
@@ -43,6 +40,13 @@ class RRT(MARRTtree):
                     if  8 < len(path)< 10:
                         path_tree[idx].append(path[::-1])
         return path_tree
+
+if __name__=="__main__":
+    field = Field(GP=None)
+    Tree = RRT(field, r=np.linspace(-pi/8,pi/8,9),samples=250, x_init=[(6,12,1.57),(3,3,1.57),(12,5,1.57)])
+    Tree.rrt()
+    Tree.visualize()
+    
 
     
         

@@ -79,13 +79,13 @@ def MA_showplt(ax1, ax2, ax3, ax4, ax5, field, path, t, rmse):
     ax5.plot(t, rmse, 'g.:')
 
 
-def MA_rmse(ax, t, rmse, rmse2):
+def plot_rmse(ax, t, rmse, rmse2):
     ax.plot(t, rmse, "y.:")
     ax.plot(t, rmse2, "g.:")
     color = ['r','b','g','y']
 
 
-def MA_path(ax, field, path):
+def plot_path(ax, field, path):
     X= field.sample_grid()
     gridx = field.size[0]*20+1
     gridy = field.size[1]*20+1

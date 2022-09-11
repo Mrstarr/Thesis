@@ -1,6 +1,5 @@
-from re import X
-from tkinter import SOLID
-from matplotlib import markers
+from cProfile import label
+from cmath import pi
 import numpy as np
 from rtree import index
 from trajectory import *
@@ -22,10 +21,6 @@ class Vertice():
         self.w = w
 
 
-
-
-
-
 class MARRTtree(object):
 
 
@@ -42,7 +37,8 @@ class MARRTtree(object):
         for root in x_init:
             self.tree.append(RRTtree(root))
 
-            
+
+    
     def extend(self):
         for tree in self.tree:
             x_rand = self.X.sample_free()    # numpy array 
@@ -64,7 +60,7 @@ class MARRTtree(object):
 
         x_new = None
         for r in self.r:
-            x_r = motion(x, 0.5, r)
+            x_r = motion(x, 0.3, r)
             if not boundarycheck(self.X, x_r):
                 continue
             dis = self.manhattan_distance(y[0:2],x_r[0:2])
@@ -90,15 +86,21 @@ class MARRTtree(object):
 
     def visualize(self):
         idx = 0
+        colorlist = [(0.8,0.2,0.2,0.8),(0.2,0.8,0.2,0.8),(0.2,0.2,0.8,0.8)]
         for tree in self.tree:
             at = np.array(list(tree.E.keys())) # arrow head
             ah = np.array(list(tree.E.values())) # arrow tail
             for (h,t) in zip(ah, at):
-                plt.plot([h[0],t[0]],[h[1],t[1]], color=(0.1,0.1,0.1,0.3), linestyle="solid", linewidth=0.5, markersize=0.5)
+                plt.plot([h[0],t[0]],[h[1],t[1]], color=colorlist[idx], linestyle="solid", linewidth=0.5, markersize=0.5)
             idx+=1
             #plt.annotate(s='', xy=arrow_tail,xytext =(0,0), arrowprops=dict(arrowstyle='->'))
+        idx = 0
         for x in self.x_init:
-            plt.plot(x[0], x[1], marker=(3, 0, x[2] / np.pi *180 - 90), markersize=20, linestyle='None')
+            plt.plot(x[0], x[1], marker=(3, 0, x[2] / np.pi *180 - 90), color=colorlist[idx],markersize=10, linestyle='None', label=r'Agent '+ str(idx))
+            idx+=1
+        plt.xlim(0, 15)
+        plt.ylim(0, 15)
+        plt.legend()
         plt.show()
 
     
@@ -117,6 +119,7 @@ class MARRTtree(object):
             for path in pt:
                 l = len(path)
                 path = [x.pose for x in path]
+                #path = [x for x in path]
                 for i in range(l-1):
                     plt.plot([path[i][0],path[i+1][0]],[path[i][1],path[i+1][1]], "g->", linewidth=0.5, markersize=0.5)
                 plt.plot([self.x_init[idx][0], path[0][0]], [self.x_init[idx][1],path[0][1] ], "g->", linewidth=0.5, markersize=0.5)
@@ -179,6 +182,7 @@ class RRTtree():
         self.add_edge(x_new[0], parent)
         self.V_list[idx].has_child = True
         
+
 
 
 
