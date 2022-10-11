@@ -50,8 +50,7 @@ class MARRTtree(object):
             x_new = self.steer(x_nearest_pose, x_rand)  # new pose
             
             # rrt star
-            x_near = tree.near_vertice()
-            self.re
+
             if x_new is not None:
                 tree.connect(x_new, x_nearest_pose, x_nearest_idx)
                      
