@@ -1,53 +1,48 @@
-from this import d
+from select import select
 import numpy as np
-from sklearn import cluster
-
+from heuristics import utility
 
 class PathCluster():
 
-    def __init__(self,k, max_iter) -> None:
+    def __init__(self,k, max_iter):
         self.k = k
         self.max_iter = max_iter
 
 
-    def cluster(self, paths):
-        clustered_paths = []
-
-        for path in paths:
-            centroid = self.initialize(path)
+    def cluster(self, path_ma):
+        ma_clusters = []
+        for path_sa in path_ma:
+            centroid = self.initialize(path_sa)
             iter = 0
             converged = False
             
             while not converged and iter < self.max_iter:
 
-                clusters = self.nearest_cluster(path, centroid)
-                new_centroid = self.update_centroid(path, clusters)
-
+                cluster_p, cluster_tr = self.nearest_cluster(path_sa, centroid)
+                new_centroid = self.update_centroid(path_sa, cluster_tr)
                 dist = np.sum(np.linalg.norm(centroid-new_centroid,axis=2))
                 if dist < 1e-5:
                     converged = True
             
                 centroid = new_centroid
                 iter += 1
+            ma_clusters.append(cluster_p)
 
-            clt_path = self.centroid_path(path, centroid)
-            clustered_paths.append(clt_path)
-
-        return clustered_paths
-        # steer given centroids
-
-        # return steered clustered paths
+        return ma_clusters
     
 
-    def nearest_cluster(self, path, centroid):
-        clusters = []
-        for j in range(self.k):
-            clusters.append([])
-        for p in path:
+    def nearest_cluster(self, path_sa, centroid):
+        cluster_p = []
+        cluster_tr = []
+        for _ in range(self.k):
+            cluster_p.append([])
+            cluster_tr.append([])
+        for p in path_sa:
             p_tr = np.array([v.pose[0:2] for v in p])
             cluster_idx = np.argmin(np.sum(np.linalg.norm(centroid-p_tr,axis=2),axis=1))
-            clusters[cluster_idx].append(p_tr)
-        return clusters
+            cluster_p[cluster_idx].append(p)
+            cluster_tr[cluster_idx].append(p_tr)
+        return cluster_p, cluster_tr
 
 
     def update_centroid(self, path, clusters):
@@ -63,18 +58,14 @@ class PathCluster():
 
 
     def initialize(self, paths):
-        path_len = len(paths)
-        rand_idx = np.random.randint(0, path_len)
+        rand_idx = np.random.randint(0, len(paths))
         centroid = [[v.pose[0:2] for v in paths[rand_idx]]]
-        #centroid = [[v[0:2] for v in paths[rand_idx]]]
         
         i = 1
         while i < self.k:
             max_dis = 0
             for path in paths:
                 p = [v.pose[0:2] for v in path]
-                #p = [v[0:2] for v in path]
-
                 dist = min([self.euclidean(c, p) for c in centroid])
                 if dist > max_dis:
                     max_dis = dist
@@ -110,5 +101,5 @@ class PathCluster():
 #         [(1,1,1),(1.5,1.5,1),(2.5,2,1)]
 #         ]
     
-# pc = PathCluster()
+# pc = PathCluster(3, 100)
 # pc.cluster(paths)

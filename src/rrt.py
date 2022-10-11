@@ -10,42 +10,53 @@ class RRT(MARRTtree):
     samples: number of nodes to be extended
     self.r: control variables, angular velocity in this case 
     '''
-    def __init__(self, X, x_init, samples, r) -> None:
-        self.samples = samples
-        super().__init__(X, r, x_init)
+    def __init__(self, X:Field, x_init, n_iter, mo_prim):
+        self.n_iter = n_iter
+        self.X = X
+        self.mo_prim = mo_prim
+        super().__init__(X, x_init, mo_prim)
 
 
     def update(self, X, x_init):
-        super().__init__(X, self.r, x_init)
+        super().__init__(X, x_init, self.mo_prim)
 
 
     def rrt(self): 
         i = 0
-        while i < self.samples:
+        while i < self.n_iter:
             self.extend()
             i+=1
     
 
-    def get_path(self):
+    def get_path(self, len_path):
         path_tree = []
         for (idx,tree) in enumerate(self.tree):
             path_tree.append([])              # add path tree for each agent
-            for v in tree.V_list:          
-                if not v.has_child: 
-                    path = []                         # add single path to current tree
-                    while v.parent is not None:
-                        # backward until the root
-                        path.append(v)
-                        v = tree.V_list[v.parent]
-                    if  8 < len(path)< 10:
-                        path_tree[idx].append(path[::-1])
+            #print(tree.V_list[0].child)
+            for v in tree.V_list:   
+                # if not v.has_child: 
+                path = []                         # add single path to current tree
+                vc = v
+                l = len_path
+                while l >= 0:    
+                    if vc.parent is not None:
+                        path.append(vc)
+                        vc = tree.V_list[vc.parent]
+                        l -= 1
+                    else:
+                        break
+                
+                if len(path) == len_path:
+                    path_tree[idx].append(path[::-1])
         return path_tree
 
 if __name__=="__main__":
     field = Field(GP=None)
-    Tree = RRT(field, r=np.linspace(-pi/8,pi/8,9),samples=250, x_init=[(6,12,1.57),(3,3,1.57),(12,5,1.57)])
+    Tree = RRT(field, r=np.linspace(-pi/8,pi/8,90),samples=800, x_init=[(8,8,0)])
     Tree.rrt()
+    fig = plt.figure(figsize=[5,5])
     Tree.visualize()
+    fig.savefig('RRT.eps', format='eps')
     
 
     

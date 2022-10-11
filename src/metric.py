@@ -1,5 +1,7 @@
 import numpy as np
+import time
 
+from Field import Field
 
 def RMSE(field):
     """
@@ -12,10 +14,12 @@ def RMSE(field):
 
 
 
-def RVSE(field):
+def RVSE(field:Field):
     """
     Root-mean-variance-error
     """
-    X = field.sample_grid()
+    
+    X, _, _ = field.sample_rvse()
     _, std = field.GP.GPM.predict(X, return_std=True)
-    return np.sqrt(np.mean(std**2))
+    rvse = np.sqrt(np.mean(std**2))
+    return rvse

@@ -7,7 +7,7 @@ from math import exp
 import matplotlib.pyplot as plt
 
 class GaussianProcess2D():
-    def __init__(self, alpha, kernel=None) -> None:
+    def __init__(self, alpha, length_scale=1.0, kernel=None) -> None:
         """
         Radial-basis function kernel
         k(xi,xj) = exp(-d(xi,xj)^2/(2*length_scale^2))
@@ -15,7 +15,7 @@ class GaussianProcess2D():
         """
         # kernel =  1.0 * RBF(1.0)
         kernel =  ConstantKernel(1.0, constant_value_bounds="fixed") \
-                * RBF(1.5, length_scale_bounds="fixed")
+                * RBF(length_scale, length_scale_bounds="fixed")
 
         """
         RationalQuadratic kernel

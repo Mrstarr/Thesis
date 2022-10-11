@@ -17,38 +17,56 @@ class Vertice():
         """
         self.pose = pose
         self.parent = parent
-        self.has_child = False
         self.w = w
+        # self.c = c
 
 
 class MARRTtree(object):
 
 
-    def __init__(self, X, r, x_init) -> None:
+    def __init__(self, X, x_init, mo_prim) -> None:
         """
         x_inits: list of tuple, e.g. [(1,2,0),(10,10,4)]
         """
         self.X = X
         self.tree = []
         self.tree_count = 0
-        self.r = r
+        self.r = mo_prim['steer']
+        self.v = mo_prim['vel']
         self.x_init = x_init
         
         for root in x_init:
             self.tree.append(RRTtree(root))
+            self.tree_count +=1 
 
 
     
     def extend(self):
-        for tree in self.tree:
-            x_rand = self.X.sample_free()    # numpy array 
-            #x_rand = self.X.sample_normal(tree.root)
-            x_nearest_idx, x_nearest_pose= tree.nearest(x_rand)  # vertice class
-            x_new = self.steer(x_nearest_pose, x_rand)  # new pose      
+        
+        for tree in self.tree: 
+            x_rand = self.X.sample_normal(tree.root)
+            #x_rand = self.X.sample_free()    # numpy array 
+            x_nearest_idx, x_nearest_pose= tree.nearest(x_rand)  # vertice class        
+            x_new = self.steer(x_nearest_pose, x_rand)  # new pose
+            
+            # rrt star
+            x_near = tree.near_vertice()
+            self.re
             if x_new is not None:
                 tree.connect(x_new, x_nearest_pose, x_nearest_idx)
+                     
             
-            
+
+    def steer2(self, x, y): 
+        delta = 0.3
+        theta = math.atan2(y[1]-x[1], y[0]-x[0])
+        x_newx = x[0] + delta * math.cos(theta)
+        x_newy = x[1] + delta * math.sin(theta)
+        x_neww = theta
+        return ((x_newx,x_newy,x_neww), x_neww)
+
+
+
     def steer(self, x, y):
         """
         Determine whether & how x can be extended towards y
@@ -60,10 +78,10 @@ class MARRTtree(object):
 
         x_new = None
         for r in self.r:
-            x_r = motion(x, 0.3, r)
+            x_r = motion(x, self.v, r)
             if not boundarycheck(self.X, x_r):
                 continue
-            dis = self.manhattan_distance(y[0:2],x_r[0:2])
+            dis = self.eucliean_distance(y[0:2],x_r[0:2])
             if dis < min_dis:
                 min_dis = dis
                 x_new = x_r
@@ -86,8 +104,9 @@ class MARRTtree(object):
 
     def visualize(self):
         idx = 0
-        colorlist = [(0.8,0.2,0.2,0.8),(0.2,0.8,0.2,0.8),(0.2,0.2,0.8,0.8)]
-        for tree in self.tree:
+        colorlist = [(0.2,0.2,0.2,0.8),(0.2,0.8,0.2,0.8),(0.2,0.2,0.8,0.8)]
+        #colorlist = [(0.2,0.2,0.8,0.9)]
+        for tree in self.tree:      
             at = np.array(list(tree.E.keys())) # arrow head
             ah = np.array(list(tree.E.values())) # arrow tail
             for (h,t) in zip(ah, at):
@@ -100,7 +119,9 @@ class MARRTtree(object):
             idx+=1
         plt.xlim(0, 15)
         plt.ylim(0, 15)
-        plt.legend()
+        #plt.legend()
+        plt.xticks([])
+        plt.yticks([])
         plt.show()
 
     
@@ -147,6 +168,7 @@ class RRTtree():
         pose = x_new[0]
         self.V.insert(self.V_count, np.concatenate((pose[0:2],pose[0:2])), pose)   # sole point as bounding box\
         self.V_list.append(Vertice(pose, parent_idx, x_new[1]))
+        
         self.V_count += 1
 
         
@@ -163,24 +185,26 @@ class RRTtree():
         return idx, next(self.V.nearest(x, 1, objects="raw"))
 
 
-    # def near_vertice(self, x, n):
-    #     """
-    #     return a set of vertices within a closed ball of radius rn centered at x
-    #     x -> target searching point
-    #     n -> number of returns
+    def near_vertice(self, x, n):
+        """
+        return a set of vertices within a closed ball of radius rn centered at x
+        x -> target searching point
+        n -> number of returns
 
-    #     Methods to call solutions
-    #     --- <generator object Index._get_objects>
-    #     1. next(...)
-    #     2. [x for x in ...]
-    #     """
-    #     return self.V.nearest(x, 1, objects="raw")
+        Methods to call solutions
+        --- <generator object Index._get_objects>
+        1. next(...)
+        2. [x for x in ...]
+        """
+        idx = list(self.V.nearest(x, 1))[0]
+        return self.V.nearest(x, 1, objects="raw")
 
 
     def connect(self, x_new, parent, idx):
         self.add_vertice(x_new, idx)
         self.add_edge(x_new[0], parent)
-        self.V_list[idx].has_child = True
+        #self.V_list[idx].has_child = True
+        #self.V_list[idx].child.append(self.V_count - 1)
         
 
 

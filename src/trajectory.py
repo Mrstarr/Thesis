@@ -1,39 +1,5 @@
 import math
 import numpy as np
-from heuristics import control_penalty
-
-
-
-def get_trajectory(X, pose, horizon):
-    """
-    return a list contains N trajectories of robot
-    each trajectory has H points, where H is the horizon.
-    pos = agent.movemotion
-    """
-    trajectory = []
-    trajectory_pe = [] 
-    v = 0.5
-    init_pose = pose
-    for w in np.linspace(-math.pi/8, math.pi/8, 5):
-        next = motion(init_pose, v, w)
-        if not boundarycheck(X, next):  # check the validity of next movement
-            continue
-        npose = init_pose
-        lst_len = len(trajectory)
-        trajectory.append([])
-
-        control_pe = 0              # calculate control cost during iteration
-        for j in range(horizon):
-            npose = motion(npose, v, w)
-            if not boundarycheck(X, npose):
-                control_pe -= 5   # mid-way collision intrigue penalty
-                break
-            trajectory[lst_len].append(npose)
-
-        control_pe += control_penalty(v, w)        
-        trajectory_pe.append(control_pe)
-    
-    return trajectory, trajectory_pe
 
 
 def motion(pose, v, w):

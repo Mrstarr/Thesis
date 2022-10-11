@@ -7,31 +7,41 @@ from MultiAgentExplore import *
 import matplotlib.pyplot as plt
 from Gaussian2D import GaussianProcess2D
 from visualization import *
+import json
+import time
 
 
-fig = plt.figure()
-
-ax1 = fig.add_subplot(131)
-ax2 = fig.add_subplot(132)
-ax3 = fig.add_subplot(133)
-
-step = 160
-
+step = 300
+sim = 10
 # Initialization
 x_init = [(0,0,0), (0,0,0)]
-gp1 = GaussianProcess2D(alpha=1e-2)
-gp2 = GaussianProcess2D(alpha=1e-2)
+data = {}
+print("Start Simulation")
+paralist = [2,4,8]
+motion_primitive = {'steer':np.linspace(-math.pi/6,math.pi/6,7), 'vel': 0.4}
+for para in paralist:
+    dict_file = open("Sim_"+str(para)+"c.json","w")
+    for i in range(sim):
+        start_time = time.time()
+        gp = GaussianProcess2D(alpha=1e-2,length_scale=1.5)
+        X = Field(gp)
+        explorer = MultiAgentExplore(X, x_init.copy(), step)
+        path, rvse = explorer.explore("stbg", nsamples=1200, ncluster=para, len_path=10, weights=(1,1),mo_prim=motion_primitive)
+        simdata = {}
+        simdata["path"] = path
+        simdata["rvse"] = rvse
+        data[i] = simdata
+        print("Finish Simulation ", i, "Used Time:", time.time()-start_time)
+    json.dump(data, dict_file)
+    dict_file.close()
 
-X1 = Field(gp1)
-X2 = Field(gp2)
-
-explorer = MultiAgentExplore(X1, x_init, step)
-explorer2 = MultiAgentExplore(X2, x_init.copy(), step)
-
-# explore field
-path_greedy, t, rmse = explorer.explore("greedy")
-plot_path(ax1, explorer.X, path_greedy)
-path_stbg, t, rmse2 = explorer2.explore("stbg")
-plot_path(ax2, explorer2.X, path_stbg)
-plot_rmse(ax3, t, rmse, rmse2)
-plt.show()
+# step = 100
+# motion_primitive = {'steer':np.linspace(-math.pi/6,math.pi/6,7), 'vel': 0.3}
+# x_init = [(0,0,0), (0,0,0)]
+# fig= plt.figure()
+# gp = GaussianProcess2D(alpha=1e-2,length_scale=1.5)
+# X = Field(gp)
+# explorer = MultiAgentExplore(X, x_init.copy(), step)
+# path, rmse = explorer.explore("stbg", nsamples=1000, ncluster=8, len_path=10, weights=(1,1), mo_prim = motion_primitive)
+# MA_planningmap(path, X)
+# plt.show()
